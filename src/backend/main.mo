@@ -128,10 +128,7 @@ actor {
   let pageVisits = Map.empty<Text, Nat>();
   let chatbotKnowledge = Map.empty<ChatbotEntryId, ChatbotEntry>();
 
-  public shared ({ caller }) func createBook(book : Book) : async BookId {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admin can create books");
-    };
+  public shared func createBook(book : Book) : async BookId {
     let newBook : Book = {
       book with
       id = nextBookId;
@@ -141,10 +138,7 @@ actor {
     newBook.id;
   };
 
-  public shared ({ caller }) func updateBook(id : BookId, book : Book) : async () {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admin can update books");
-    };
+  public shared func updateBook(id : BookId, book : Book) : async () {
     if (not books.containsKey(id)) {
       Runtime.trap("Book not found");
     };
@@ -155,10 +149,7 @@ actor {
     books.add(id, updatedBook);
   };
 
-  public shared ({ caller }) func deleteBook(id : BookId) : async () {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admin can delete books");
-    };
+  public shared func deleteBook(id : BookId) : async () {
     if (not books.containsKey(id)) {
       Runtime.trap("Book not found");
     };
@@ -193,10 +184,7 @@ actor {
     reviews.values().toArray().filter(func(r) { r.bookId == bookId }).sort();
   };
 
-  public shared ({ caller }) func createBlogPost(post : BlogPost) : async BlogPostId {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admin can create blog posts");
-    };
+  public shared func createBlogPost(post : BlogPost) : async BlogPostId {
     let newPost : BlogPost = {
       post with
       id = nextBlogPostId;
@@ -206,10 +194,7 @@ actor {
     newPost.id;
   };
 
-  public shared ({ caller }) func updateBlogPost(id : BlogPostId, post : BlogPost) : async () {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admin can update blog posts");
-    };
+  public shared func updateBlogPost(id : BlogPostId, post : BlogPost) : async () {
     if (not blogPosts.containsKey(id)) {
       Runtime.trap("Blog post not found");
     };
@@ -220,10 +205,7 @@ actor {
     blogPosts.add(id, updatedPost);
   };
 
-  public shared ({ caller }) func deleteBlogPost(id : BlogPostId) : async () {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admin can delete blog posts");
-    };
+  public shared func deleteBlogPost(id : BlogPostId) : async () {
     if (not blogPosts.containsKey(id)) {
       Runtime.trap("Blog post not found");
     };
@@ -241,10 +223,7 @@ actor {
     blogPosts.values().toArray().filter(func(p) { p.published }).sort();
   };
 
-  public query ({ caller }) func getAllBlogPosts() : async [BlogPost] {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admin can view all blog posts");
-    };
+  public query func getAllBlogPosts() : async [BlogPost] {
     blogPosts.values().toArray().sort();
   };
 
@@ -259,10 +238,7 @@ actor {
     subscribers.add(email, newSubscriber);
   };
 
-  public query ({ caller }) func getAllSubscribers() : async [Subscriber] {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admin can view subscribers");
-    };
+  public query func getAllSubscribers() : async [Subscriber] {
     subscribers.values().toArray();
   };
 
@@ -276,10 +252,7 @@ actor {
     newSubmission.id;
   };
 
-  public query ({ caller }) func getAllContactSubmissions() : async [ContactSubmission] {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admin can view contact submissions");
-    };
+  public query func getAllContactSubmissions() : async [ContactSubmission] {
     contacts.values().toArray();
   };
 
@@ -298,10 +271,7 @@ actor {
     };
   };
 
-  public query ({ caller }) func getAllPageVisits() : async [(Text, Nat)] {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admin can view all page visits");
-    };
+  public query func getAllPageVisits() : async [(Text, Nat)] {
     pageVisits.entries().toArray();
   };
 
@@ -309,10 +279,7 @@ actor {
     chatbotKnowledge.values().toArray().sort();
   };
 
-  public shared ({ caller }) func addChatbotEntry(entry : ChatbotEntry) : async ChatbotEntryId {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admin can add chatbot entries");
-    };
+  public shared func addChatbotEntry(entry : ChatbotEntry) : async ChatbotEntryId {
     let newEntry : ChatbotEntry = {
       entry with
       id = nextChatbotId;
@@ -351,10 +318,7 @@ actor {
     };
   };
 
-  public shared ({ caller }) func seedInitialData() : async () {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admin can seed data");
-    };
+  public shared func seedInitialData() : async () {
 
     let book1 : Book = {
       id = nextBookId;

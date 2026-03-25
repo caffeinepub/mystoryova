@@ -9,9 +9,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Mail, MessageSquare } from "lucide-react";
+import { BookOpen, Loader2, Mail, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
-import { SiGoodreads, SiInstagram, SiLinkedin, SiX } from "react-icons/si";
+import { SiFacebook, SiInstagram } from "react-icons/si";
 import { toast } from "sonner";
 import ScrollReveal from "../components/ScrollReveal";
 import { useMetaTags } from "../hooks/useMetaTags";
@@ -182,10 +182,10 @@ export default function ContactPage() {
                 For urgent inquiries or literary agency communications:
               </p>
               <a
-                href="mailto:contact@ochiddarwar.com"
+                href="mailto:mystoryova@gmail.com"
                 className="text-primary hover:underline text-sm"
               >
-                contact@ochiddarwar.com
+                mystoryova@gmail.com
               </a>
             </div>
             <div className="glass rounded-2xl p-8">
@@ -206,15 +206,7 @@ export default function ContactPage() {
               </h3>
               <div className="flex flex-col gap-3">
                 <a
-                  href="https://x.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  <SiX className="w-5 h-5" /> Twitter / X
-                </a>
-                <a
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/mystoryova?igsh=MW9zZjdscWtodXpwNg=="
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
@@ -222,20 +214,20 @@ export default function ContactPage() {
                   <SiInstagram className="w-5 h-5" /> Instagram
                 </a>
                 <a
-                  href="https://goodreads.com"
+                  href="https://www.facebook.com/share/18R1ypxq4q/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
-                  <SiGoodreads className="w-5 h-5" /> Goodreads
+                  <SiFacebook className="w-5 h-5" /> Facebook
                 </a>
                 <a
-                  href="https://linkedin.com"
+                  href="https://www.amazon.com/author/o.chiddarwar"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
-                  <SiLinkedin className="w-5 h-5" /> LinkedIn
+                  <BookOpen className="w-5 h-5" /> Amazon Author Page
                 </a>
               </div>
             </div>

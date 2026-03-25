@@ -1,11 +1,16 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Link, useParams } from "@tanstack/react-router";
-import { ArrowLeft, BookOpen, Loader2, ShoppingCart, Star } from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpen,
+  MessageSquare,
+  ShoppingCart,
+  Star,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import BookCard, { getBookCover } from "../components/BookCard";
@@ -18,43 +23,95 @@ import {
   useGetReviewsForBook,
 } from "../hooks/useQueries";
 
-const STAR_INDICES = [0, 1, 2, 3, 4];
+function StarRating({
+  value,
+  onChange,
+}: { value: number; onChange?: (v: number) => void }) {
+  const [hovered, setHovered] = useState(0);
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => onChange?.(star)}
+          onMouseEnter={() => onChange && setHovered(star)}
+          onMouseLeave={() => onChange && setHovered(0)}
+          className={
+            onChange
+              ? "cursor-pointer transition-transform hover:scale-110"
+              : "cursor-default"
+          }
+          tabIndex={onChange ? 0 : -1}
+        >
+          <Star
+            className="w-5 h-5"
+            fill={(hovered || value) >= star ? "#c9a96e" : "none"}
+            stroke={(hovered || value) >= star ? "#c9a96e" : "#6b7280"}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function formatDate(dateStr: string) {
+  try {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
 
 export default function BookDetailPage() {
   const { id } = useParams({ from: "/books/$id" });
   const { data: book, isLoading } = useGetBook(id);
   const { data: relatedBooks = [] } = useGetRelatedBooks(id);
-  const { data: reviews = [] } = useGetReviewsForBook(id);
+  const { data: reviews = [], isLoading: reviewsLoading } =
+    useGetReviewsForBook(id);
   const addReview = useAddReview();
 
   const [reviewerName, setReviewerName] = useState("");
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
 
   useMetaTags({ title: book?.title, description: book?.description });
 
-  const handleReviewSubmit = (e: React.FormEvent) => {
+  const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!book) return;
-    addReview.mutate(
-      {
+    if (!reviewerName.trim()) {
+      toast.error("Please enter your name.");
+      return;
+    }
+    if (rating === 0) {
+      toast.error("Please select a star rating.");
+      return;
+    }
+    if (!reviewText.trim()) {
+      toast.error("Please write your review.");
+      return;
+    }
+    try {
+      await addReview.mutateAsync({
         id: BigInt(0),
         bookId: book.id,
-        reviewerName,
+        reviewerName: reviewerName.trim(),
+        reviewText: reviewText.trim(),
         rating: BigInt(rating),
-        reviewText,
         reviewDate: new Date().toISOString().split("T")[0],
-      },
-      {
-        onSuccess: () => {
-          toast.success("Review submitted!");
-          setReviewerName("");
-          setReviewText("");
-          setRating(5);
-        },
-        onError: () => toast.error("Failed to submit review."),
-      },
-    );
+      });
+      toast.success("Thank you for your review!");
+      setReviewerName("");
+      setRating(0);
+      setReviewText("");
+    } catch {
+      toast.error("Failed to submit review. Please try again.");
+    }
   };
 
   if (isLoading) {
@@ -75,10 +132,9 @@ export default function BookDetailPage() {
     );
 
   const cover = getBookCover(book);
-  const avgRating =
-    reviews.length > 0
-      ? reviews.reduce((sum, r) => sum + Number(r.rating), 0) / reviews.length
-      : 0;
+  const sortedReviews = [...reviews].sort((a, b) =>
+    b.reviewDate.localeCompare(a.reviewDate),
+  );
 
   return (
     <div className="min-h-screen">
@@ -132,21 +188,6 @@ export default function BookDetailPage() {
                 <p className="text-muted-foreground text-lg mb-4">
                   {book.subtitle}
                 </p>
-              )}
-              {reviews.length > 0 && (
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="flex gap-0.5">
-                    {STAR_INDICES.map((n) => (
-                      <Star
-                        key={n}
-                        className={`w-4 h-4 ${n < Math.round(avgRating) ? "fill-primary text-primary" : "text-muted-foreground/40"}`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    ({reviews.length} reviews)
-                  </span>
-                </div>
               )}
               <p className="text-foreground leading-relaxed mb-6">
                 {book.description}
@@ -213,94 +254,63 @@ export default function BookDetailPage() {
             </section>
           </ScrollReveal>
         )}
+
+        {/* Reader Reviews Section */}
         <ScrollReveal>
           <section data-ocid="reviews.section">
-            <h2 className="font-serif text-2xl font-bold text-foreground mb-8">
-              Reader Reviews
-            </h2>
-            {reviews.length === 0 ? (
-              <div
-                data-ocid="reviews.empty_state"
-                className="glass rounded-2xl p-8 text-center"
-              >
-                <p className="text-muted-foreground">
-                  Be the first to leave a review.
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4 mb-8">
-                {reviews.map((r, i) => (
-                  <div
-                    key={String(r.id)}
-                    data-ocid={`reviews.item.${i + 1}`}
-                    className="glass rounded-2xl p-6"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-semibold text-foreground text-sm">
-                        {r.reviewerName}
-                      </span>
-                      <div className="flex gap-0.5">
-                        {STAR_INDICES.map((n) => (
-                          <Star
-                            key={n}
-                            className={`w-3.5 h-3.5 ${n < Number(r.rating) ? "fill-primary text-primary" : "text-muted-foreground/30"}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      {r.reviewText}
-                    </p>
-                    <p className="text-xs text-muted-foreground/60 mt-3">
-                      {r.reviewDate}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="glass rounded-2xl p-8">
-              <h3 className="font-serif text-xl font-bold text-foreground mb-6">
-                Write a Review
+            <div className="flex items-center gap-3 mb-8">
+              <MessageSquare className="w-5 h-5 text-primary" />
+              <h2 className="font-serif text-2xl font-bold text-foreground">
+                Reader Reviews
+              </h2>
+              {reviews.length > 0 && (
+                <span className="text-sm text-muted-foreground ml-1">
+                  ({reviews.length})
+                </span>
+              )}
+            </div>
+
+            {/* Submit Review Form */}
+            <div className="glass rounded-2xl p-6 border border-white/10 mb-8">
+              <h3 className="font-serif text-lg font-semibold text-foreground mb-5">
+                Share Your Thoughts
               </h3>
-              <form onSubmit={handleReviewSubmit} className="space-y-4">
+              <form onSubmit={handleSubmitReview} className="space-y-4">
                 <div>
-                  <Label htmlFor="reviewer-name">Your Name</Label>
+                  <label
+                    htmlFor="review-name"
+                    className="text-sm text-muted-foreground mb-1.5 block"
+                  >
+                    Your Name
+                  </label>
                   <Input
+                    id="review-name"
                     data-ocid="reviews.input"
-                    id="reviewer-name"
                     value={reviewerName}
                     onChange={(e) => setReviewerName(e.target.value)}
-                    required
-                    className="mt-1 bg-muted/30 border-white/10"
+                    placeholder="Enter your name"
+                    className="bg-muted/30 border-white/10 focus:border-primary/60"
                   />
                 </div>
                 <div>
-                  <Label>Rating</Label>
-                  <div className="flex gap-2 mt-2">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setRating(s)}
-                        className="transition-transform hover:scale-110"
-                      >
-                        <Star
-                          className={`w-6 h-6 ${s <= rating ? "fill-primary text-primary" : "text-muted-foreground/40"}`}
-                        />
-                      </button>
-                    ))}
-                  </div>
+                  <p className="text-sm text-muted-foreground mb-1.5">Rating</p>
+                  <StarRating value={rating} onChange={setRating} />
                 </div>
                 <div>
-                  <Label htmlFor="review-text">Your Review</Label>
+                  <label
+                    htmlFor="review-text"
+                    className="text-sm text-muted-foreground mb-1.5 block"
+                  >
+                    Your Review
+                  </label>
                   <Textarea
-                    data-ocid="reviews.textarea"
                     id="review-text"
+                    data-ocid="reviews.textarea"
                     value={reviewText}
                     onChange={(e) => setReviewText(e.target.value)}
-                    required
+                    placeholder="What did you think of this book?"
                     rows={4}
-                    className="mt-1 bg-muted/30 border-white/10"
+                    className="bg-muted/30 border-white/10 focus:border-primary/60 resize-none"
                   />
                 </div>
                 <Button
@@ -309,19 +319,59 @@ export default function BookDetailPage() {
                   disabled={addReview.isPending}
                   className="bg-primary text-primary-foreground hover:brightness-110"
                 >
-                  {addReview.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    "Submit Review"
-                  )}
+                  {addReview.isPending
+                    ? "Submitting..."
+                    : "Share Your Thoughts"}
                 </Button>
               </form>
             </div>
+
+            {/* Reviews List */}
+            {reviewsLoading ? (
+              <div className="space-y-4" data-ocid="reviews.loading_state">
+                {[1, 2].map((i) => (
+                  <Skeleton key={i} className="h-32 rounded-2xl" />
+                ))}
+              </div>
+            ) : sortedReviews.length === 0 ? (
+              <div
+                data-ocid="reviews.empty_state"
+                className="glass rounded-2xl p-10 border border-white/10 text-center"
+              >
+                <Star className="w-10 h-10 text-primary/40 mx-auto mb-3" />
+                <p className="text-muted-foreground font-serif italic text-lg">
+                  Be the first to share your thoughts on this book.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {sortedReviews.map((review, i) => (
+                  <div
+                    key={String(review.id)}
+                    data-ocid={`reviews.item.${i + 1}`}
+                    className="glass rounded-2xl p-6 border border-white/10"
+                  >
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div>
+                        <p className="font-semibold text-foreground">
+                          {review.reviewerName}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {formatDate(review.reviewDate)}
+                        </p>
+                      </div>
+                      <StarRating value={Number(review.rating)} />
+                    </div>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {review.reviewText}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </ScrollReveal>
+
         {relatedBooks.length > 0 && (
           <ScrollReveal>
             <section>

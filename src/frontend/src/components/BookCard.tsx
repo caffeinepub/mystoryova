@@ -62,7 +62,7 @@ export default function BookCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <h3 className="font-serif text-lg font-semibold text-foreground line-clamp-1">
+              <h3 className="font-serif text-xl font-semibold text-foreground line-clamp-1">
                 {book.title}
               </h3>
               {book.subtitle && (
@@ -83,7 +83,11 @@ export default function BookCard({
           </div>
           <div className="flex flex-wrap gap-1 mt-2">
             {book.genres.map((g) => (
-              <Badge key={g} variant="secondary" className="text-xs">
+              <Badge
+                key={g}
+                variant="outline"
+                className="text-[10px] border-white/20 text-white/60"
+              >
                 {g}
               </Badge>
             ))}
@@ -137,9 +141,9 @@ export default function BookCard({
   return (
     <div
       data-ocid={`book.item.${index}`}
-      className="glass rounded-2xl overflow-hidden flex flex-col transition-all duration-300 hover:shadow-gold group"
+      className="glass rounded-2xl overflow-hidden flex flex-col transition-all duration-300 hover:shadow-gold group border-t-2 border-t-transparent hover:border-t-primary"
     >
-      <div className="relative overflow-hidden h-64">
+      <div className="relative overflow-hidden h-72">
         {cover ? (
           <img
             src={cover}
@@ -153,7 +157,7 @@ export default function BookCard({
             </span>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
         <button
           type="button"
           data-ocid={`book.toggle.${index}`}
@@ -169,12 +173,16 @@ export default function BookCard({
       <div className="p-5 flex flex-col flex-1">
         <div className="flex flex-wrap gap-1 mb-2">
           {book.genres.slice(0, 2).map((g) => (
-            <Badge key={g} variant="secondary" className="text-xs">
+            <Badge
+              key={g}
+              variant="outline"
+              className="text-[10px] border-white/20 text-white/60"
+            >
               {g}
             </Badge>
           ))}
         </div>
-        <h3 className="font-serif text-lg font-semibold text-foreground leading-tight">
+        <h3 className="font-serif text-xl font-semibold text-foreground leading-tight">
           {book.title}
         </h3>
         {book.subtitle && (
@@ -196,6 +204,7 @@ export default function BookCard({
             </Badge>
           ))}
         </div>
+        <div className="h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent mt-4" />
         <div className="flex gap-2 mt-4">
           <Link to="/books/$id" params={{ id: bookId }} className="flex-1">
             <Button

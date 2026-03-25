@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -21,15 +22,18 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  BookOpen,
   Eye,
   EyeOff,
+  ImagePlus,
   Loader2,
   LogOut,
   Pencil,
   Plus,
   Trash2,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { BlogPost, Book } from "../backend";
 import { useAdmin } from "../hooks/useAdmin";
@@ -152,13 +156,63 @@ function BookForm({
     ...EMPTY_BOOK,
     ...(book ? { ...book } : {}),
   });
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverUploadProgress, setCoverUploadProgress] = useState(0);
+  const [urlMode, setUrlMode] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const set =
     (field: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((p) => ({ ...p, [field]: e.target.value }));
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate image
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file.");
+      return;
+    }
+
+    // Max 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB.");
+      return;
+    }
+
+    setCoverUploading(true);
+    setCoverUploadProgress(0);
+
+    try {
+      // Simulate progress while reading file
+      const progressInterval = setInterval(() => {
+        setCoverUploadProgress((p) => Math.min(p + 20, 80));
+      }, 80);
+
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target?.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      clearInterval(progressInterval);
+      setCoverUploadProgress(100);
+
+      setForm((p) => ({ ...p, coverUrl: dataUrl }));
+      toast.success("Cover image loaded successfully");
+    } catch {
+      toast.error("Failed to load image. Try pasting a URL instead.");
+    } finally {
+      setCoverUploading(false);
+      setTimeout(() => setCoverUploadProgress(0), 600);
+    }
+  };
+
   return (
-    <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+    <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
       <div>
         <Label>Title</Label>
         <Input
@@ -215,15 +269,120 @@ function BookForm({
           className="mt-1 bg-muted/30 border-white/10"
         />
       </div>
+
+      {/* ── Book Cover Upload ── */}
       <div>
-        <Label>Cover URL</Label>
-        <Input
-          data-ocid="admin.input"
-          value={form.coverUrl}
-          onChange={set("coverUrl")}
-          className="mt-1 bg-muted/30 border-white/10"
-        />
+        <div className="flex items-center justify-between mb-2">
+          <Label>Book Cover</Label>
+          <button
+            type="button"
+            onClick={() => setUrlMode((v) => !v)}
+            className="text-xs text-primary hover:underline"
+          >
+            {urlMode ? "← Upload file" : "Paste URL instead →"}
+          </button>
+        </div>
+
+        <div className="flex gap-4 items-start">
+          {/* Cover preview or placeholder */}
+          <div
+            className="flex-shrink-0 w-28 h-40 rounded-xl border border-white/15 bg-muted/20 overflow-hidden relative group"
+            style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.3)" }}
+          >
+            {form.coverUrl ? (
+              <>
+                <img
+                  src={form.coverUrl}
+                  alt="Cover preview"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+                <button
+                  type="button"
+                  data-ocid="admin.delete_button"
+                  onClick={() => {
+                    setForm((p) => ({ ...p, coverUrl: "" }));
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </>
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                <BookOpen className="w-8 h-8 opacity-40" />
+                <span className="text-[10px] text-center px-2 opacity-50 leading-tight">
+                  No cover
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Upload controls */}
+          <div className="flex-1 space-y-3">
+            {!urlMode ? (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  data-ocid="admin.upload_button"
+                  onChange={handleFileChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={coverUploading}
+                  className="w-full flex flex-col items-center justify-center gap-2 px-4 py-5 rounded-xl border-2 border-dashed border-white/20 bg-muted/10 hover:bg-muted/20 hover:border-primary/50 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
+                  data-ocid="admin.dropzone"
+                >
+                  {coverUploading ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  ) : (
+                    <ImagePlus className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  )}
+                  <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                    {coverUploading
+                      ? `Processing… ${coverUploadProgress}%`
+                      : "Click to upload cover image"}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/60">
+                    JPG, PNG, WEBP — max 5 MB
+                  </span>
+                </button>
+                {coverUploading && (
+                  <Progress
+                    value={coverUploadProgress}
+                    className="h-1"
+                    data-ocid="admin.loading_state"
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                <Input
+                  data-ocid="admin.input"
+                  placeholder="https://example.com/cover.jpg"
+                  value={form.coverUrl.startsWith("data:") ? "" : form.coverUrl}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, coverUrl: e.target.value }))
+                  }
+                  className="bg-muted/30 border-white/10 text-sm"
+                />
+                <p className="text-[11px] text-muted-foreground/70">
+                  Paste a direct image URL from Amazon, Goodreads, or your CDN.
+                </p>
+              </>
+            )}
+          </div>
+        </div>
       </div>
+      {/* ── End Cover Upload ── */}
+
       <div>
         <Label>Amazon Link</Label>
         <Input
@@ -554,6 +713,7 @@ export default function AdminPage() {
                 <Table data-ocid="admin.table">
                   <TableHeader>
                     <TableRow className="border-white/10">
+                      <TableHead>Cover</TableHead>
                       <TableHead>Title</TableHead>
                       <TableHead>Genres</TableHead>
                       <TableHead>Formats</TableHead>
@@ -569,6 +729,25 @@ export default function AdminPage() {
                         data-ocid={`admin.row.${i + 1}`}
                         className="border-white/10"
                       >
+                        <TableCell>
+                          <div className="w-10 h-14 rounded overflow-hidden bg-muted/30 border border-white/10 flex-shrink-0">
+                            {book.coverUrl ? (
+                              <img
+                                src={book.coverUrl}
+                                alt={book.title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display =
+                                    "none";
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <BookOpen className="w-4 h-4 text-muted-foreground opacity-40" />
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="font-medium text-foreground">
                           {book.title}
                         </TableCell>

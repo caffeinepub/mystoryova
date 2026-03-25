@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "@tanstack/react-router";
-import { BookOpen, ChevronLeft, ChevronRight, Mail, Star } from "lucide-react";
+import { BookOpen, ChevronDown, Mail } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 import Book3D from "../components/Book3D";
@@ -16,57 +16,12 @@ import {
   useSubscribeNewsletter,
 } from "../hooks/useQueries";
 
-const QUOTES = [
-  {
-    text: "She didn't fear the dark. She feared what it revealed about the light she had chosen to believe in.",
-    source: "The Echo Chamber",
-  },
-  {
-    text: "Memory is not a record. It is a wound that heals in the shape of whoever we need to become.",
-    source: "The Weight of Remembering",
-  },
-  {
-    text: "Some silences carry more truth than any confession. The space between words is where we actually live.",
-    source: "The Silence Between",
-  },
-];
-
-const TESTIMONIALS = [
-  {
-    text: "O. Chiddarwar writes with a scalpel. Every sentence strips away another layer of comfortable illusion. 'The Echo Chamber' is the most unsettling book I've read in years — and also the most healing.",
-    name: "Priya M.",
-    label: "Goodreads Reviewer",
-    rating: 5,
-  },
-  {
-    text: "There is a rare courage in this writing. Chiddarwar does not flinch. The exploration of grief in 'The Weight of Remembering' left me changed.",
-    name: "James K.",
-    label: "BookClub Member",
-    rating: 5,
-  },
-  {
-    text: "I picked up 'Fractured Mirrors' on a whim and didn't surface for two days. The psychological depth is extraordinary.",
-    name: "Aisha R.",
-    label: "Verified Reviewer",
-    rating: 5,
-  },
-  {
-    text: "Literary fiction that actually matters. Chiddarwar understands the human condition with terrifying precision.",
-    name: "Thomas B.",
-    label: "Amazon Reviewer",
-    rating: 5,
-  },
-];
-
-const STAR_INDICES = [0, 1, 2, 3, 4];
-
 export default function HomePage() {
   useMetaTags({ title: "Home" });
   const { data: books = [], isLoading } = useGetAllBooks();
   const subscribeMutation = useSubscribeNewsletter();
   const seedMutation = useSeedInitialData();
   const [email, setEmail] = useState("");
-  const [testimonialIdx, setTestimonialIdx] = useState(0);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
   useEffect(() => {
@@ -75,14 +30,6 @@ export default function HomePage() {
         onSuccess: () => localStorage.setItem("seeded", "true"),
       });
     }
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(
-      () => setTestimonialIdx((i) => (i + 1) % TESTIMONIALS.length),
-      5000,
-    );
-    return () => clearInterval(timer);
   }, []);
 
   const handleSubscribe = (e: React.FormEvent) => {
@@ -108,6 +55,7 @@ export default function HomePage() {
         <div className="absolute inset-0 cinematic-bg" />
         <div className="absolute inset-0 vignette pointer-events-none" />
         <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="absolute right-1/4 bottom-1/3 w-64 h-64 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
         <div className="relative max-w-7xl mx-auto px-6 py-24 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
           <div className="flex justify-center">
             <div
@@ -128,13 +76,14 @@ export default function HomePage() {
               variant="outline"
               className="border-primary/50 text-primary text-xs tracking-widest mb-6"
             >
-              PSYCHOLOGICAL FICTION
+              MYSTORYOVA
             </Badge>
-            <h1 className="font-serif text-4xl md:text-6xl font-bold text-foreground leading-tight mb-6">
+            <h1 className="font-serif text-5xl md:text-7xl font-bold text-foreground leading-tight mb-4 hero-text-shadow">
               Stories That Haunt.
               <br />
               <span className="text-gradient-gold">Truths That Heal.</span>
             </h1>
+            <div className="section-divider my-6 max-w-xs" />
             <p className="text-muted-foreground text-lg md:text-xl leading-relaxed mb-8 max-w-lg">
               O. Chiddarwar explores the labyrinth of the human mind — where
               memory fractures, love distorts, and healing begins in the most
@@ -145,7 +94,7 @@ export default function HomePage() {
                 <Button
                   data-ocid="hero.primary_button"
                   size="lg"
-                  className="bg-primary text-primary-foreground hover:brightness-110 px-8 font-semibold tracking-wide"
+                  className="bg-primary text-primary-foreground hover:brightness-110 px-10 py-3 font-semibold tracking-wide hover:shadow-[0_0_20px_rgba(201,169,110,0.4)] transition-shadow"
                 >
                   <BookOpen className="w-5 h-5 mr-2" /> Explore the Collection
                 </Button>
@@ -162,6 +111,9 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
+        </div>
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce text-primary/60 pointer-events-none">
+          <ChevronDown className="w-6 h-6" />
         </div>
       </section>
 
@@ -208,115 +160,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="py-24 px-6 relative" data-ocid="quotes.section">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent pointer-events-none" />
-        <div className="max-w-5xl mx-auto">
-          <ScrollReveal className="text-center mb-16">
-            <p className="text-xs tracking-[0.3em] text-primary mb-3">
-              WORDS FROM THE PAGES
-            </p>
-            <h2 className="font-serif text-3xl md:text-5xl font-bold text-foreground">
-              Passages
-            </h2>
-          </ScrollReveal>
-          <div className="flex flex-col gap-12">
-            {QUOTES.map((q) => (
-              <ScrollReveal key={q.source}>
-                <blockquote className="glass rounded-2xl p-8 md:p-12 relative">
-                  <span
-                    className="absolute top-4 left-8 font-serif text-8xl text-primary/20 leading-none select-none"
-                    aria-hidden="true"
-                  >
-                    “
-                  </span>
-                  <p className="font-serif text-xl md:text-2xl text-foreground leading-relaxed italic pl-8 relative z-10">
-                    {q.text}
-                  </p>
-                  <footer className="mt-6 pl-8">
-                    <cite className="text-xs tracking-widest text-primary not-italic">
-                      — {q.source}
-                    </cite>
-                  </footer>
-                </blockquote>
-              </ScrollReveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-24 px-6" data-ocid="testimonials.section">
-        <div className="max-w-3xl mx-auto">
-          <ScrollReveal className="text-center mb-16">
-            <p className="text-xs tracking-[0.3em] text-primary mb-3">
-              READER VOICES
-            </p>
-            <h2 className="font-serif text-3xl md:text-5xl font-bold text-foreground">
-              What Readers Say
-            </h2>
-          </ScrollReveal>
-          <div className="relative">
-            <div className="glass rounded-2xl p-8 md:p-12 min-h-48">
-              <div className="flex gap-1 mb-6">
-                {STAR_INDICES.map((n) => (
-                  <Star
-                    key={n}
-                    className={`w-4 h-4 ${n < TESTIMONIALS[testimonialIdx].rating ? "fill-primary text-primary" : "text-muted-foreground/40"}`}
-                  />
-                ))}
-              </div>
-              <blockquote className="font-serif text-lg md:text-xl text-foreground leading-relaxed italic mb-6">
-                "{TESTIMONIALS[testimonialIdx].text}"
-              </blockquote>
-              <div>
-                <p className="font-semibold text-foreground text-sm">
-                  {TESTIMONIALS[testimonialIdx].name}
-                </p>
-                <p className="text-muted-foreground text-xs tracking-widest">
-                  {TESTIMONIALS[testimonialIdx].label}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center justify-center gap-4 mt-6">
-              <button
-                type="button"
-                data-ocid="testimonials.pagination_prev"
-                onClick={() =>
-                  setTestimonialIdx(
-                    (i) => (i - 1 + TESTIMONIALS.length) % TESTIMONIALS.length,
-                  )
-                }
-                className="p-2 rounded-full glass hover:text-primary transition-colors"
-                aria-label="Previous"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <div className="flex gap-2">
-                {TESTIMONIALS.map((t) => (
-                  <button
-                    type="button"
-                    key={t.name}
-                    onClick={() => setTestimonialIdx(TESTIMONIALS.indexOf(t))}
-                    className={`h-2 rounded-full transition-all ${TESTIMONIALS.indexOf(t) === testimonialIdx ? "bg-primary w-6" : "bg-muted-foreground/40 w-2"}`}
-                    aria-label={`Go to testimonial by ${t.name}`}
-                  />
-                ))}
-              </div>
-              <button
-                type="button"
-                data-ocid="testimonials.pagination_next"
-                onClick={() =>
-                  setTestimonialIdx((i) => (i + 1) % TESTIMONIALS.length)
-                }
-                className="p-2 rounded-full glass hover:text-primary transition-colors"
-                aria-label="Next"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="py-24 px-6" data-ocid="newsletter.section">
         <div className="max-w-2xl mx-auto">
           <ScrollReveal className="glass rounded-2xl p-10 md:p-14 text-center">
@@ -325,8 +168,8 @@ export default function HomePage() {
               Stay in the Story
             </h2>
             <p className="text-muted-foreground mb-8 leading-relaxed">
-              Join the inner circle. Receive exclusive excerpts, writing notes,
-              and first access to new releases.
+              Join the inner circle. Receive exclusive writing notes and first
+              access to new releases.
             </p>
             <form
               onSubmit={handleSubscribe}

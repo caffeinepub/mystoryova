@@ -1,41 +1,7 @@
-import { Award, BookOpen, Calendar, Pen } from "lucide-react";
 import { useEffect } from "react";
 import ScrollReveal from "../components/ScrollReveal";
 import { useMetaTags } from "../hooks/useMetaTags";
 import { useRecordPageVisit } from "../hooks/useQueries";
-
-const MILESTONES = [
-  {
-    year: "2015",
-    event:
-      "Published debut novella 'Quiet Thresholds' — received regional literary award for psychological fiction.",
-  },
-  {
-    year: "2017",
-    event:
-      "'The Silence Between' becomes bestseller in literary fiction, translated into six languages.",
-  },
-  {
-    year: "2019",
-    event:
-      "Writer-in-Residence at the Mahindra Humanities Center, Harvard. Completed 'Fractured Mirrors'.",
-  },
-  {
-    year: "2021",
-    event:
-      "'The Echo Chamber' wins the DSC Prize for South Asian Literature. Over 100,000 copies sold.",
-  },
-  {
-    year: "2023",
-    event:
-      "'The Weight of Remembering' longlisted for the Booker Prize. International speaking tour across 12 countries.",
-  },
-  {
-    year: "2024",
-    event:
-      "'Beneath the Unnamed' releases to critical acclaim. Named one of Time Magazine's 100 Most Influential People.",
-  },
-];
 
 export default function AboutPage() {
   useMetaTags({
@@ -78,118 +44,63 @@ export default function AboutPage() {
             </div>
             <div className="space-y-6">
               <p className="text-foreground text-lg leading-relaxed">
-                O. Chiddarwar is an award-winning author of psychological and
-                emotional fiction, celebrated for exploring the inner
-                architecture of trauma, memory, and human connection with
-                unflinching precision and literary grace.
+                The author is a versatile writer with a passion for storytelling
+                across multiple genres. With a strong interest in exploring
+                human emotions, relationships, and imaginative ideas, the author
+                enjoys creating stories that connect deeply with readers. From
+                romance and drama to mystery and thought-provoking narratives,
+                the writing reflects creativity, curiosity, and a desire to tell
+                meaningful stories.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                Born in Pune, India, and educated at JNU Delhi and Cambridge,
-                Chiddarwar's work has been described as "excavations of the
-                soul" — fiction that doesn't just tell stories, but demands that
-                readers confront the truths they carry.
+                Through each work, the author aims to craft engaging and
+                memorable narratives that inspire readers and leave a lasting
+                impression.
               </p>
-              <p className="text-muted-foreground leading-relaxed">
-                With six internationally published novels, awards from three
-                continents, and a readership spanning literary clubs, therapy
-                offices, and university syllabi, O. Chiddarwar occupies a rare
-                space: the intersection of the intellectually rigorous and the
-                deeply felt.
-              </p>
-              <div className="flex flex-wrap gap-4 pt-4">
-                <div className="flex items-center gap-2 text-sm text-primary">
-                  <BookOpen className="w-4 h-4" /> 6 Published Novels
-                </div>
-                <div className="flex items-center gap-2 text-sm text-primary">
-                  <Award className="w-4 h-4" /> 4 Major Literary Awards
-                </div>
-                <div className="flex items-center gap-2 text-sm text-primary">
-                  <Pen className="w-4 h-4" /> 12 Languages Translated
-                </div>
-              </div>
+              <blockquote className="border-l-2 border-primary pl-6 mt-6">
+                <p className="font-serif italic text-muted-foreground text-lg leading-relaxed">
+                  &ldquo;Every story I write is a search for something I
+                  can&rsquo;t yet name.&rdquo;
+                </p>
+                <cite className="text-xs tracking-widest text-primary mt-3 block not-italic">
+                  &mdash; O. CHIDDARWAR
+                </cite>
+              </blockquote>
+              <a
+                href="https://www.amazon.com/author/o.chiddarwar"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 mt-2 px-6 py-2.5 border border-primary/50 text-primary text-xs tracking-widest hover:bg-primary/10 transition-colors rounded-full"
+              >
+                VIEW ON AMAZON
+              </a>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-20 space-y-16">
+      <div className="max-w-4xl mx-auto px-6 py-20">
         <ScrollReveal>
-          <section>
-            <h2 className="font-serif text-3xl font-bold text-foreground mb-8">
-              Writing Philosophy
+          <section className="text-center">
+            <div className="section-divider mb-12" />
+            <p className="text-xs tracking-[0.3em] text-primary mb-4">
+              CONNECT
+            </p>
+            <h2 className="font-serif text-3xl font-bold text-foreground mb-6">
+              Follow the Journey
             </h2>
-            <div className="space-y-6">
-              <div className="glass rounded-2xl p-8">
-                <h3 className="font-serif text-xl font-semibold text-primary mb-4">
-                  The Obligation of Honesty
-                </h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Literature, for me, is not entertainment — though it can be.
-                  It is testimony. Every character I write is someone's truth
-                  rendered visible. The psychological interior of a person is
-                  the most complex, contested, and profoundly political terrain
-                  there is. I write to map it, not to conquer it.
-                </p>
-              </div>
-              <div className="glass rounded-2xl p-8">
-                <h3 className="font-serif text-xl font-semibold text-primary mb-4">
-                  Healing Through Darkness
-                </h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  People often ask why my books are so dark. I would ask: why do
-                  we assume that light is found only in brightness? My
-                  characters descend into pain, addiction, grief, and betrayal
-                  not because I am cruel — but because I believe, deeply, that
-                  the path through is the only path out.
-                </p>
-              </div>
-              <div className="glass rounded-2xl p-8">
-                <h3 className="font-serif text-xl font-semibold text-primary mb-4">
-                  The Reader as Co-Author
-                </h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  A book is not finished when it leaves the author's hands. It
-                  begins when it enters the reader's mind. Every interpretation
-                  is valid. Every emotional response is correct. I write the
-                  first half of the truth. The reader writes the second.
-                </p>
-              </div>
-            </div>
-          </section>
-        </ScrollReveal>
-
-        <ScrollReveal>
-          <section data-ocid="timeline.section">
-            <h2 className="font-serif text-3xl font-bold text-foreground mb-12">
-              Milestones
-            </h2>
-            <div className="relative">
-              <div className="absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-primary/60 via-primary/20 to-transparent" />
-              <div className="space-y-8">
-                {MILESTONES.map((m) => (
-                  <ScrollReveal key={m.year} delay={100}>
-                    <div
-                      data-ocid={`timeline.item.${m.year}`}
-                      className="flex gap-6 items-start relative pl-4"
-                    >
-                      <div className="relative">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary flex items-center justify-center flex-shrink-0">
-                          <Calendar className="w-3.5 h-3.5 text-primary" />
-                        </div>
-                      </div>
-                      <div className="glass rounded-2xl p-6 flex-1">
-                        <span className="text-primary font-semibold text-sm tracking-widest">
-                          {m.year}
-                        </span>
-                        <p className="text-foreground mt-2 leading-relaxed">
-                          {m.event}
-                        </p>
-                      </div>
-                    </div>
-                  </ScrollReveal>
-                ))}
-              </div>
-            </div>
+            <p className="text-muted-foreground leading-relaxed max-w-xl mx-auto">
+              Follow on Instagram for writing updates, behind-the-scenes
+              moments, and the stories that don&rsquo;t make it into books.
+            </p>
+            <a
+              href="https://www.instagram.com/mystoryova?igsh=MW9zZjdscWtodXpwNg=="
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mt-8 px-8 py-3 border border-primary/50 text-primary text-sm tracking-widest hover:bg-primary/10 transition-colors rounded-full"
+            >
+              @MYSTORYOVA
+            </a>
           </section>
         </ScrollReveal>
       </div>

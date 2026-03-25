@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { SiGoodreads, SiInstagram, SiLinkedin, SiX } from "react-icons/si";
+import { BookOpen } from "lucide-react";
+import { SiFacebook, SiInstagram } from "react-icons/si";
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -15,12 +16,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           {/* Brand */}
           <div>
-            <Link to="/" className="inline-flex items-center gap-3 mb-4">
-              <img
-                src="/assets/generated/mystoryova-logo-primary.dim_1200x600.png"
-                alt="Mystoryova"
-                className="h-16 w-auto object-contain"
-              />
+            <Link to="/" className="inline-flex items-center mb-4">
+              <span className="font-serif text-2xl font-bold tracking-wide text-foreground">
+                Mystoryova
+              </span>
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed mt-2">
               Official website of O. Chiddarwar.
@@ -59,16 +58,7 @@ export default function Footer() {
             </h4>
             <div className="flex gap-4">
               <a
-                href="https://x.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="X"
-                className="text-muted-foreground hover:text-primary transition-colors"
-              >
-                <SiX className="w-5 h-5" />
-              </a>
-              <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/mystoryova?igsh=MW9zZjdscWtodXpwNg=="
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
@@ -77,22 +67,22 @@ export default function Footer() {
                 <SiInstagram className="w-5 h-5" />
               </a>
               <a
-                href="https://goodreads.com"
+                href="https://www.facebook.com/share/18R1ypxq4q/"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Goodreads"
+                aria-label="Facebook"
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
-                <SiGoodreads className="w-5 h-5" />
+                <SiFacebook className="w-5 h-5" />
               </a>
               <a
-                href="https://linkedin.com"
+                href="https://www.amazon.com/author/o.chiddarwar"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="LinkedIn"
+                aria-label="Amazon Author Page"
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
-                <SiLinkedin className="w-5 h-5" />
+                <BookOpen className="w-5 h-5" />
               </a>
             </div>
           </div>

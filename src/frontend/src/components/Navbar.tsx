@@ -16,7 +16,6 @@ export default function Navbar() {
   const { theme, setTheme } = useTheme();
   const { count } = useWishlist();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const isLight = theme === "light";
 
   return (
     <header className="sticky top-0 z-50 w-full" data-ocid="nav.section">
@@ -29,22 +28,9 @@ export default function Navbar() {
             className="flex items-center gap-2 shrink-0"
             aria-label="Mystoryova — Home"
           >
-            {/* Icon-only emblem */}
-            <img
-              src="/assets/generated/mystoryova-logo-icon.dim_400x400.png"
-              alt="Mystoryova emblem"
-              className="h-9 w-9 object-contain"
-            />
-            {/* Wordmark — swaps between gold (dark) and dark (light) */}
-            <img
-              src={
-                isLight
-                  ? "/assets/generated/mystoryova-logo-wordmark.dim_800x200.png"
-                  : "/assets/generated/mystoryova-logo-wordmark.dim_800x200.png"
-              }
-              alt="Mystoryova"
-              className="h-8 w-auto object-contain hidden sm:block"
-            />
+            <span className="font-serif text-xl font-bold tracking-wide text-foreground">
+              Mystoryova
+            </span>
           </Link>
 
           {/* Desktop nav */}
