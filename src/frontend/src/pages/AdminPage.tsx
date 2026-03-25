@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { HttpAgent } from "@icp-sdk/core/agent";
 import {
   BookOpen,
   Eye,
@@ -37,6 +38,7 @@ import {
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { BlogPost, Book } from "../backend";
+import { loadConfig } from "../config";
 import { useAdmin } from "../hooks/useAdmin";
 import { useMetaTags } from "../hooks/useMetaTags";
 import {
@@ -52,6 +54,7 @@ import {
   useUpdateBlogPost,
   useUpdateBook,
 } from "../hooks/useQueries";
+import { StorageClient } from "../utils/StorageClient";
 
 const EMPTY_BOOK: Omit<Book, "id"> = {
   title: "",
@@ -205,15 +208,8 @@ function BookForm({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate image
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file.");
-      return;
-    }
-
-    // Max 5MB
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be under 5MB.");
       return;
     }
 
@@ -221,25 +217,62 @@ function BookForm({
     setCoverUploadProgress(0);
 
     try {
-      // Simulate progress while reading file
-      const progressInterval = setInterval(() => {
-        setCoverUploadProgress((p) => Math.min(p + 20, 80));
-      }, 80);
-
-      const dataUrl = await new Promise<string>((resolve, reject) => {
+      // Compress image using canvas
+      const compressedDataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (ev) => resolve(ev.target?.result as string);
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const MAX_WIDTH = 400;
+            const scale = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1;
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              reject(new Error("Canvas not supported"));
+              return;
+            }
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.7));
+          };
+          img.onerror = reject;
+          img.src = ev.target?.result as string;
+        };
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
 
-      clearInterval(progressInterval);
-      setCoverUploadProgress(100);
+      // Convert data URL to bytes
+      const base64 = compressedDataUrl.split(",")[1];
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
 
-      setForm((p) => ({ ...p, coverUrl: dataUrl }));
-      toast.success("Cover image loaded successfully");
+      // Upload to blob storage
+      const config = await loadConfig();
+      const agent = new HttpAgent({ host: config.backend_host });
+      if (config.backend_host?.includes("localhost")) {
+        await agent.fetchRootKey().catch(() => {});
+      }
+      const storageClient = new StorageClient(
+        config.bucket_name,
+        config.storage_gateway_url,
+        config.backend_canister_id,
+        config.project_id,
+        agent,
+      );
+      const { hash } = await storageClient.putFile(bytes, (pct) => {
+        setCoverUploadProgress(Math.round(pct));
+      });
+      const url = await storageClient.getDirectURL(hash);
+      setForm((p) => ({ ...p, coverUrl: url }));
+      setCoverUploadProgress(100);
+      toast.success("Cover uploaded successfully");
     } catch {
-      toast.error("Failed to load image. Try pasting a URL instead.");
+      toast.error("Failed to upload image. Try pasting a URL instead.");
     } finally {
       setCoverUploading(false);
       setTimeout(() => setCoverUploadProgress(0), 600);
@@ -382,11 +415,11 @@ function BookForm({
                   )}
                   <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
                     {coverUploading
-                      ? `Processing… ${coverUploadProgress}%`
+                      ? `Uploading… ${coverUploadProgress}%`
                       : "Click to upload cover image"}
                   </span>
                   <span className="text-[10px] text-muted-foreground/60">
-                    JPG, PNG, WEBP — max 5 MB
+                    JPG, PNG, WEBP — max 10 MB
                   </span>
                 </button>
                 {coverUploading && (

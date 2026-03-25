@@ -51,7 +51,6 @@ actor {
 
   type BookId = Nat;
 
-  // V1 type kept for stable variable migration (matches previously deployed schema)
   type BookV1 = {
     id : BookId;
     title : Text;
@@ -67,7 +66,6 @@ actor {
     featured : Bool;
   };
 
-  // Current Book type with separate eBook and Paperback links
   type Book = {
     id : BookId;
     title : Text;
@@ -132,19 +130,37 @@ actor {
     answer : Text;
   };
 
-  var nextBookId = 1;
-  var nextReviewId = 1;
-  var nextBlogPostId = 1;
-  var nextContactId = 1;
-  var nextChatbotId = 1;
-  var adminPassword = "admin123";
+  // ── Comparison helpers (defined early so they can be used anywhere) ──
 
-  // Migration staging: receives old stable data (named 'books' to match previous deployment)
+  func compareBooks(book1 : Book, book2 : Book) : Order.Order {
+    switch (Text.compare(book1.title, book2.title)) {
+      case (#equal) { Nat.compare(book1.id, book2.id) };
+      case (order) { order };
+    };
+  };
+
+  func compareReviews(review1 : Review, review2 : Review) : Order.Order {
+    Text.compare(review1.reviewDate, review2.reviewDate);
+  };
+
+  func compareBlogPosts(post1 : BlogPost, post2 : BlogPost) : Order.Order {
+    Text.compare(post2.publishedDate, post1.publishedDate);
+  };
+
+  func compareChatbotEntries(entry1 : ChatbotEntry, entry2 : ChatbotEntry) : Order.Order {
+    Text.compare(entry1.question, entry2.question);
+  };
+
+  stable var nextBookId = 1;
+  stable var nextReviewId = 1;
+  stable var nextBlogPostId = 1;
+  stable var nextContactId = 1;
+  stable var nextChatbotId = 1;
+  stable var adminPassword = "admin123";
+  stable var realBooksSeedVersion = 0;
+
   let books = Map.empty<BookId, BookV1>();
-
-  // Current books storage using new Book type
   let booksV2 = Map.empty<BookId, Book>();
-
   let reviews = Map.empty<ReviewId, Review>();
   let blogPosts = Map.empty<BlogPostId, BlogPost>();
   let subscribers = Map.empty<Text, Subscriber>();
@@ -152,7 +168,81 @@ actor {
   let pageVisits = Map.empty<Text, Nat>();
   let chatbotKnowledge = Map.empty<ChatbotEntryId, ChatbotEntry>();
 
-  // Migrate V1 books (amazonLink) to V2 books (amazonEbookLink + amazonPaperbackLink)
+  func seedRealBooksIfNeeded() {
+    if (realBooksSeedVersion >= 1) return;
+
+    let alreadyHasLongClimb = booksV2.values().toArray().any(func(b) {
+      b.title == "The Long Climb"
+    });
+    if (not alreadyHasLongClimb) {
+      let longClimb : Book = {
+        id = nextBookId;
+        title = "The Long Climb";
+        subtitle = "A Journey of Resilience";
+        description = "A powerful story of perseverance, growth, and the human spirit's capacity to rise above every obstacle. Follow one person's extraordinary journey through struggle and self-discovery, proving that every step forward — no matter how small — is a victory worth celebrating.";
+        coverUrl = "/assets/generated/book-the-long-climb.dim_400x600.jpg";
+        amazonEbookLink = "https://www.amazon.com/author/o.chiddarwar";
+        amazonPaperbackLink = "https://www.amazon.com/author/o.chiddarwar";
+        formats = ["Kindle", "Paperback"];
+        genres = ["Motivational", "Drama", "Literary Fiction"];
+        publishedDate = "2024-01-01";
+        authorNotes = "This book is close to my heart — written for everyone who has ever had to climb their own mountain.";
+        lookInsideText = "Chapter 1: The first step is always the hardest. But it is also the most important...";
+        featured = true;
+      };
+      booksV2.add(nextBookId, longClimb);
+      nextBookId += 1;
+    };
+
+    let alreadyHasEmber = booksV2.values().toArray().any(func(b) {
+      b.title == "The Ember Prophecy"
+    });
+    if (not alreadyHasEmber) {
+      let emberProphecy : Book = {
+        id = nextBookId;
+        title = "The Ember Prophecy";
+        subtitle = "Flames of Destiny";
+        description = "An epic tale of fate, fire, and a prophecy that has haunted generations. When the chosen one awakens to their destiny, the world as they know it will never be the same. A gripping blend of fantasy and emotional depth that keeps readers turning pages.";
+        coverUrl = "/assets/generated/book-the-ember-prophecy.dim_400x600.jpg";
+        amazonEbookLink = "https://www.amazon.com/author/o.chiddarwar";
+        amazonPaperbackLink = "https://www.amazon.com/author/o.chiddarwar";
+        formats = ["Kindle", "Paperback"];
+        genres = ["Fantasy", "Adventure", "Drama"];
+        publishedDate = "2023-06-15";
+        authorNotes = "The Ember Prophecy was born from my fascination with destiny and the choices we make when fate calls.";
+        lookInsideText = "Prologue: In the age before memory, it was written in flame...";
+        featured = true;
+      };
+      booksV2.add(nextBookId, emberProphecy);
+      nextBookId += 1;
+    };
+
+    let alreadyHasLetter = booksV2.values().toArray().any(func(b) {
+      b.title == "The Letter in the Rain"
+    });
+    if (not alreadyHasLetter) {
+      let letterInRain : Book = {
+        id = nextBookId;
+        title = "The Letter in the Rain";
+        subtitle = "Words That Found Their Way Home";
+        description = "A heartfelt romance about a letter lost and found, and the two souls it connects across time and circumstance. Tender, emotional, and beautifully written — this story reminds us that love always finds a way, even through the storm.";
+        coverUrl = "/assets/generated/book-the-letter-in-the-rain.dim_400x600.jpg";
+        amazonEbookLink = "https://www.amazon.com/author/o.chiddarwar";
+        amazonPaperbackLink = "https://www.amazon.com/author/o.chiddarwar";
+        formats = ["Kindle", "Paperback"];
+        genres = ["Romance", "Drama", "Literary Fiction"];
+        publishedDate = "2022-11-10";
+        authorNotes = "I wrote this book thinking about all the things we wish we had said — and all the letters never sent.";
+        lookInsideText = "Dear Stranger, By the time you read this, the rain will have stopped...";
+        featured = false;
+      };
+      booksV2.add(nextBookId, letterInRain);
+      nextBookId += 1;
+    };
+
+    realBooksSeedVersion := 1;
+  };
+
   system func postupgrade() {
     for ((id, b) in books.entries()) {
       if (not booksV2.containsKey(id)) {
@@ -172,12 +262,12 @@ actor {
           featured = b.featured;
         };
         booksV2.add(id, migrated);
-        // Keep nextBookId correct after migration
         if (b.id >= nextBookId) {
           nextBookId := b.id + 1;
         };
       };
     };
+    seedRealBooksIfNeeded();
   };
 
   public shared func createBook(book : Book) : async BookId {
@@ -216,7 +306,7 @@ actor {
   };
 
   public query func getAllBooks() : async [Book] {
-    booksV2.values().toArray().sort();
+    booksV2.values().toArray().sort(compareBooks);
   };
 
   public shared func addReview(review : Review) : async ReviewId {
@@ -233,7 +323,7 @@ actor {
   };
 
   public query func getReviewsForBook(bookId : BookId) : async [Review] {
-    reviews.values().toArray().filter(func(r) { r.bookId == bookId }).sort();
+    reviews.values().toArray().filter(func(r) { r.bookId == bookId }).sort(compareReviews);
   };
 
   public shared func createBlogPost(post : BlogPost) : async BlogPostId {
@@ -272,11 +362,11 @@ actor {
   };
 
   public query func getPublishedBlogPosts() : async [BlogPost] {
-    blogPosts.values().toArray().filter(func(p) { p.published }).sort();
+    blogPosts.values().toArray().filter(func(p) { p.published }).sort(compareBlogPosts);
   };
 
   public query func getAllBlogPosts() : async [BlogPost] {
-    blogPosts.values().toArray().sort();
+    blogPosts.values().toArray().sort(compareBlogPosts);
   };
 
   public shared func subscribeToNewsletter(email : Text) : async () {
@@ -328,7 +418,7 @@ actor {
   };
 
   public query func getAllChatbotEntries() : async [ChatbotEntry] {
-    chatbotKnowledge.values().toArray().sort();
+    chatbotKnowledge.values().toArray().sort(compareChatbotEntries);
   };
 
   public shared func addChatbotEntry(entry : ChatbotEntry) : async ChatbotEntryId {
@@ -375,7 +465,7 @@ actor {
             let overlap1 = countGenreOverlap(b1, targetGenres);
             let overlap2 = countGenreOverlap(b2, targetGenres);
             switch (Nat.compare(overlap2, overlap1)) {
-              case (#equal) { Book.compare(b1, b2) };
+              case (#equal) { compareBooks(b1, b2) };
               case (order) { order };
             };
           });
@@ -546,7 +636,7 @@ actor {
     let qa3 : ChatbotEntry = {
       id = nextChatbotId;
       question = "How many books has O. Chiddarwar published?";
-      answer = "O. Chiddarwar has published 5 books to date.";
+      answer = "O. Chiddarwar has published several books including The Long Climb, The Ember Prophecy, and The Letter in the Rain.";
     };
     chatbotKnowledge.add(nextChatbotId, qa3);
     nextChatbotId += 1;
@@ -554,7 +644,7 @@ actor {
     let qa4 : ChatbotEntry = {
       id = nextChatbotId;
       question = "What is the latest book?";
-      answer = "The latest book is 'Beyond the Veil: A Journey Within', published in January 2024.";
+      answer = "The latest book is 'The Long Climb: A Journey of Resilience', published in 2024.";
     };
     chatbotKnowledge.add(nextChatbotId, qa4);
     nextChatbotId += 1;
@@ -562,7 +652,7 @@ actor {
     let qa5 : ChatbotEntry = {
       id = nextChatbotId;
       question = "Where can I buy the books?";
-      answer = "All books are available on Amazon in various formats including eBook, Paperback, and Hardcover.";
+      answer = "All books are available on Amazon in Kindle eBook and Paperback formats.";
     };
     chatbotKnowledge.add(nextChatbotId, qa5);
     nextChatbotId += 1;
@@ -578,7 +668,7 @@ actor {
     let qa7 : ChatbotEntry = {
       id = nextChatbotId;
       question = "How can I contact O. Chiddarwar?";
-      answer = "You can use the contact form on this website to send a message directly.";
+      answer = "You can use the contact form on this website or email mystoryova@gmail.com.";
     };
     chatbotKnowledge.add(nextChatbotId, qa7);
     nextChatbotId += 1;
@@ -586,7 +676,7 @@ actor {
     let qa8 : ChatbotEntry = {
       id = nextChatbotId;
       question = "What inspired O. Chiddarwar to write?";
-      answer = "O. Chiddarwar is inspired by the complexities of the human mind and the exploration of consciousness through storytelling.";
+      answer = "O. Chiddarwar is inspired by human emotions, relationships, and the power of storytelling to connect people across different experiences.";
     };
     chatbotKnowledge.add(nextChatbotId, qa8);
     nextChatbotId += 1;
@@ -625,30 +715,4 @@ actor {
     nextReviewId += 1;
   };
 
-  module Book {
-    public func compare(book1 : Book, book2 : Book) : Order.Order {
-      switch (Text.compare(book1.title, book2.title)) {
-        case (#equal) { Nat.compare(book1.id, book2.id) };
-        case (order) { order };
-      };
-    };
-  };
-
-  module Review {
-    public func compare(review1 : Review, review2 : Review) : Order.Order {
-      Text.compare(review1.reviewDate, review2.reviewDate);
-    };
-  };
-
-  module BlogPost {
-    public func compare(post1 : BlogPost, post2 : BlogPost) : Order.Order {
-      Text.compare(post2.publishedDate, post1.publishedDate);
-    };
-  };
-
-  module ChatbotEntry {
-    public func compare(entry1 : ChatbotEntry, entry2 : ChatbotEntry) : Order.Order {
-      Text.compare(entry1.question, entry2.question);
-    };
-  };
 };
