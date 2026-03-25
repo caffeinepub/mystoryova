@@ -95,6 +95,8 @@ export interface _SERVICE {
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addChatbotEntry' : ActorMethod<[ChatbotEntry], ChatbotEntryId>,
+  'changeAdminPassword' : ActorMethod<[string, string], boolean>,
+  'verifyAdminPassword' : ActorMethod<[string], boolean>,
   'addReview' : ActorMethod<[Review], ReviewId>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'createBlogPost' : ActorMethod<[BlogPost], BlogPostId>,

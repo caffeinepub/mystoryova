@@ -20,6 +20,8 @@ import BookDetailPage from "./pages/BookDetailPage";
 import BooksPage from "./pages/BooksPage";
 import ContactPage from "./pages/ContactPage";
 import HomePage from "./pages/HomePage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsPage from "./pages/TermsPage";
 
 function RootLayout() {
   useEffect(() => {
@@ -88,6 +90,16 @@ const adminRoute = createRoute({
     </AdminProvider>
   ),
 });
+const privacyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/privacy-policy",
+  component: PrivacyPolicyPage,
+});
+const termsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/terms",
+  component: TermsPage,
+});
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -98,6 +110,8 @@ const routeTree = rootRoute.addChildren([
   blogDetailRoute,
   contactRoute,
   adminRoute,
+  privacyRoute,
+  termsRoute,
 ]);
 const router = createRouter({ routeTree });
 

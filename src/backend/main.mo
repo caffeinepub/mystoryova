@@ -137,6 +137,7 @@ actor {
   var nextBlogPostId = 1;
   var nextContactId = 1;
   var nextChatbotId = 1;
+  var adminPassword = "admin123";
 
   // Migration staging: receives old stable data (named 'books' to match previous deployment)
   let books = Map.empty<BookId, BookV1>();
@@ -338,6 +339,19 @@ actor {
     chatbotKnowledge.add(nextChatbotId, newEntry);
     nextChatbotId += 1;
     newEntry.id;
+  };
+
+  public query func verifyAdminPassword(password : Text) : async Bool {
+    password == adminPassword;
+  };
+
+  public shared func changeAdminPassword(oldPassword : Text, newPassword : Text) : async Bool {
+    if (oldPassword == adminPassword) {
+      adminPassword := newPassword;
+      true;
+    } else {
+      false;
+    };
   };
 
   func countGenreOverlap(book : Book, targetGenres : [Text]) : Nat {

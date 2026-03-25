@@ -26,6 +26,7 @@ import {
   Eye,
   EyeOff,
   ImagePlus,
+  KeyRound,
   Loader2,
   LogOut,
   Pencil,
@@ -81,10 +82,12 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
+  const [showForgot, setShowForgot] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!login(password)) {
+    const ok = await login(password);
+    if (!ok) {
       setError("Incorrect password.");
     } else setError("");
   };
@@ -143,6 +146,37 @@ function LoginForm() {
             Enter Dashboard
           </Button>
         </form>
+
+        <div className="mt-4 text-center">
+          <button
+            type="button"
+            onClick={() => setShowForgot((v) => !v)}
+            className="text-sm text-muted-foreground hover:text-primary transition-colors underline-offset-4 hover:underline"
+          >
+            Forgot password?
+          </button>
+        </div>
+
+        {showForgot && (
+          <div className="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-primary">
+              <KeyRound className="w-4 h-4 shrink-0" />
+              <span className="text-sm font-semibold">Password Recovery</span>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              The default admin password is{" "}
+              <code className="bg-muted/40 text-foreground px-1.5 py-0.5 rounded text-xs font-mono">
+                admin123
+              </code>
+              .
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Once logged in, you can change your password from the{" "}
+              <strong className="text-foreground">Settings</strong> tab in the
+              dashboard.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -681,6 +715,9 @@ export default function AdminPage() {
             <TabsTrigger value="contacts" data-ocid="admin.tab">
               Contact
             </TabsTrigger>
+            <TabsTrigger value="settings" data-ocid="admin.tab">
+              Settings
+            </TabsTrigger>
           </TabsList>
 
           {/* Books */}
@@ -1076,8 +1113,126 @@ export default function AdminPage() {
               )}
             </div>
           </TabsContent>
+          {/* Settings */}
+          <TabsContent value="settings" data-ocid="admin.panel">
+            <ChangePasswordPanel />
+          </TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
+
+function ChangePasswordPanel() {
+  const { changePassword } = useAdmin();
+  const [oldPw, setOldPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [msg, setMsg] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMsg(null);
+    if (newPw.length < 6) {
+      setMsg({
+        type: "error",
+        text: "New password must be at least 6 characters.",
+      });
+      return;
+    }
+    if (newPw !== confirmPw) {
+      setMsg({ type: "error", text: "New passwords do not match." });
+      return;
+    }
+    setLoading(true);
+    const ok = await changePassword(oldPw, newPw);
+    setLoading(false);
+    if (ok) {
+      setMsg({ type: "success", text: "Password changed successfully." });
+      setOldPw("");
+      setNewPw("");
+      setConfirmPw("");
+    } else {
+      setMsg({ type: "error", text: "Current password is incorrect." });
+    }
+  };
+
+  return (
+    <div className="max-w-md">
+      <h2 className="font-serif text-xl font-semibold text-foreground mb-6">
+        Change Password
+      </h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label
+            htmlFor="old-pw"
+            className="text-sm text-muted-foreground block mb-1"
+          >
+            Current Password
+          </label>
+          <Input
+            id="old-pw"
+            type="password"
+            value={oldPw}
+            onChange={(e) => setOldPw(e.target.value)}
+            placeholder="Enter current password"
+            required
+            className="bg-white/5 border-white/10"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="new-pw"
+            className="text-sm text-muted-foreground block mb-1"
+          >
+            New Password
+          </label>
+          <Input
+            id="new-pw"
+            type="password"
+            value={newPw}
+            onChange={(e) => setNewPw(e.target.value)}
+            placeholder="Enter new password (min 6 chars)"
+            required
+            className="bg-white/5 border-white/10"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="confirm-pw"
+            className="text-sm text-muted-foreground block mb-1"
+          >
+            Confirm New Password
+          </label>
+          <Input
+            id="confirm-pw"
+            type="password"
+            value={confirmPw}
+            onChange={(e) => setConfirmPw(e.target.value)}
+            placeholder="Repeat new password"
+            required
+            className="bg-white/5 border-white/10"
+          />
+        </div>
+        {msg && (
+          <p
+            className={`text-sm ${msg.type === "success" ? "text-green-400" : "text-destructive"}`}
+          >
+            {msg.text}
+          </p>
+        )}
+        <Button
+          type="submit"
+          disabled={loading}
+          className="bg-primary text-primary-foreground hover:brightness-110"
+        >
+          {loading ? "Saving..." : "Update Password"}
+        </Button>
+      </form>
     </div>
   );
 }

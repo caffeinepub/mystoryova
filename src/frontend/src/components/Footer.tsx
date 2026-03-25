@@ -92,6 +92,23 @@ export default function Footer() {
           <p className="text-muted-foreground text-sm">
             © {year} Mystoryova. All rights reserved.
           </p>
+          <div className="flex items-center gap-4">
+            <Link
+              to="/privacy-policy"
+              data-ocid="footer.link"
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Privacy Policy
+            </Link>
+            <span className="text-muted-foreground/40 text-xs">·</span>
+            <Link
+              to="/terms"
+              data-ocid="footer.link"
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Terms &amp; Conditions
+            </Link>
+          </div>
           <p className="text-muted-foreground text-sm">
             Built with ♥ using{" "}
             <a

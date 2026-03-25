@@ -202,6 +202,8 @@ export interface backendInterface {
     subscribeToNewsletter(email: string): Promise<void>;
     updateBlogPost(id: BlogPostId, post: BlogPost): Promise<void>;
     updateBook(id: BookId, book: Book): Promise<void>;
+    verifyAdminPassword(password: string): Promise<boolean>;
+    changeAdminPassword(oldPassword: string, newPassword: string): Promise<boolean>;
 }
 import type { UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -709,6 +711,14 @@ export class Backend implements backendInterface {
             const result = await this.actor.updateBlogPost(arg0, arg1);
             return result;
         }
+    }
+    async verifyAdminPassword(arg0: string): Promise<boolean> {
+        const result = await this.actor.verifyAdminPassword(arg0);
+        return result;
+    }
+    async changeAdminPassword(arg0: string, arg1: string): Promise<boolean> {
+        const result = await this.actor.changeAdminPassword(arg0, arg1);
+        return result;
     }
     async updateBook(arg0: BookId, arg1: Book): Promise<void> {
         if (this.processError) {
