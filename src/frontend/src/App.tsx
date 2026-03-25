@@ -1,0 +1,112 @@
+import { Toaster } from "@/components/ui/sonner";
+import {
+  Outlet,
+  RouterProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+} from "@tanstack/react-router";
+import { ThemeProvider } from "next-themes";
+import { useEffect } from "react";
+import ChatbotWidget from "./components/ChatbotWidget";
+import Footer from "./components/Footer";
+import Navbar from "./components/Navbar";
+import { AdminProvider } from "./hooks/useAdmin";
+import AboutPage from "./pages/AboutPage";
+import AdminPage from "./pages/AdminPage";
+import BlogDetailPage from "./pages/BlogDetailPage";
+import BlogPage from "./pages/BlogPage";
+import BookDetailPage from "./pages/BookDetailPage";
+import BooksPage from "./pages/BooksPage";
+import ContactPage from "./pages/ContactPage";
+import HomePage from "./pages/HomePage";
+
+function RootLayout() {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) localStorage.setItem("affiliateRef", ref);
+  }, []);
+
+  return (
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
+        <Navbar />
+        <main className="flex-1">
+          <Outlet />
+        </main>
+        <Footer />
+        <ChatbotWidget />
+        <Toaster />
+      </div>
+    </ThemeProvider>
+  );
+}
+
+const rootRoute = createRootRoute({ component: RootLayout });
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
+  component: HomePage,
+});
+const booksRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/books",
+  component: BooksPage,
+});
+const bookDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/books/$id",
+  component: BookDetailPage,
+});
+const aboutRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/about",
+  component: AboutPage,
+});
+const blogRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/blog",
+  component: BlogPage,
+});
+const blogDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/blog/$id",
+  component: BlogDetailPage,
+});
+const contactRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/contact",
+  component: ContactPage,
+});
+const adminRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin",
+  component: () => (
+    <AdminProvider>
+      <AdminPage />
+    </AdminProvider>
+  ),
+});
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  booksRoute,
+  bookDetailRoute,
+  aboutRoute,
+  blogRoute,
+  blogDetailRoute,
+  contactRoute,
+  adminRoute,
+]);
+const router = createRouter({ routeTree });
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+export default function App() {
+  return <RouterProvider router={router} />;
+}

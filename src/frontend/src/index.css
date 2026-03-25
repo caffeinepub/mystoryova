@@ -1,0 +1,155 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 1rem;
+    --background: 0.96 0.018 82;
+    --foreground: 0.18 0.03 264;
+    --card: 0.985 0.008 80;
+    --card-foreground: 0.18 0.03 264;
+    --popover: 0.985 0.008 80;
+    --popover-foreground: 0.18 0.03 264;
+    --primary: 0.62 0.105 72;
+    --primary-foreground: 0.98 0.008 80;
+    --secondary: 0.93 0.012 78;
+    --secondary-foreground: 0.18 0.03 264;
+    --muted: 0.93 0.012 78;
+    --muted-foreground: 0.5 0.02 264;
+    --accent: 0.62 0.105 72;
+    --accent-foreground: 0.98 0.008 80;
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+    --border: 0.88 0.012 78;
+    --input: 0.88 0.012 78;
+    --ring: 0.62 0.105 72;
+    --chart-1: 0.62 0.105 72;
+    --chart-2: 0.5 0.08 264;
+    --chart-3: 0.4 0.06 264;
+    --chart-4: 0.7 0.09 60;
+    --chart-5: 0.55 0.07 200;
+    --sidebar: 0.93 0.012 78;
+    --sidebar-foreground: 0.18 0.03 264;
+    --sidebar-primary: 0.62 0.105 72;
+    --sidebar-primary-foreground: 0.98 0.008 80;
+    --sidebar-accent: 0.88 0.012 78;
+    --sidebar-accent-foreground: 0.18 0.03 264;
+    --sidebar-border: 0.88 0.012 78;
+    --sidebar-ring: 0.62 0.105 72;
+  }
+
+  .dark {
+    --background: 0.085 0.03 264;
+    --foreground: 0.935 0.022 78;
+    --card: 0.13 0.028 264;
+    --card-foreground: 0.935 0.022 78;
+    --popover: 0.13 0.028 264;
+    --popover-foreground: 0.935 0.022 78;
+    --primary: 0.725 0.105 72;
+    --primary-foreground: 0.085 0.03 264;
+    --secondary: 0.16 0.025 264;
+    --secondary-foreground: 0.935 0.022 78;
+    --muted: 0.16 0.025 264;
+    --muted-foreground: 0.78 0.015 75;
+    --accent: 0.725 0.105 72;
+    --accent-foreground: 0.085 0.03 264;
+    --destructive: 0.704 0.191 22.216;
+    --destructive-foreground: 0.085 0 0;
+    --border: 1 0 0 / 12%;
+    --input: 1 0 0 / 12%;
+    --ring: 0.725 0.105 72;
+    --chart-1: 0.725 0.105 72;
+    --chart-2: 0.6 0.08 264;
+    --chart-3: 0.5 0.06 200;
+    --chart-4: 0.65 0.09 60;
+    --chart-5: 0.55 0.07 300;
+    --sidebar: 0.11 0.028 264;
+    --sidebar-foreground: 0.935 0.022 78;
+    --sidebar-primary: 0.725 0.105 72;
+    --sidebar-primary-foreground: 0.085 0.03 264;
+    --sidebar-accent: 0.16 0.025 264;
+    --sidebar-accent-foreground: 0.935 0.022 78;
+    --sidebar-border: 1 0 0 / 12%;
+    --sidebar-ring: 0.725 0.105 72;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Playfair Display", Georgia, serif;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(180, 195, 210, 0.1);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+  }
+
+  .glass-light {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .gold-glow {
+    box-shadow: 0 0 20px rgba(201, 169, 110, 0.35), 0 4px 40px
+      rgba(0, 0, 0, 0.5);
+  }
+
+  .text-gradient-gold {
+    background: linear-gradient(135deg, #c9a96e 0%, #e8c98a 50%, #c9a96e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .cinematic-bg {
+    background: radial-gradient(
+      ellipse at 30% 50%,
+      rgba(11, 16, 34, 0.9) 0%,
+      rgba(7, 10, 20, 1) 70%
+    );
+  }
+
+  .vignette {
+    background: radial-gradient(
+      ellipse at center,
+      transparent 40%,
+      rgba(0, 0, 0, 0.7) 100%
+    );
+  }
+
+  .reveal-hidden {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  .reveal-visible {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+}
