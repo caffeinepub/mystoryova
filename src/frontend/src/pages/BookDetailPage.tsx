@@ -4,13 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Link, useParams } from "@tanstack/react-router";
-import {
-  ArrowLeft,
-  BookOpen,
-  MessageSquare,
-  ShoppingCart,
-  Star,
-} from "lucide-react";
+import { ArrowLeft, BookOpen, MessageSquare, Star, Tablet } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import BookCard, { getBookCover } from "../components/BookCard";
@@ -203,17 +197,32 @@ export default function BookDetailPage() {
                   </Badge>
                 ))}
               </div>
-              {book.amazonLink && (
+              {book.amazonEbookLink && (
                 <a
-                  href={book.amazonLink}
+                  href={book.amazonEbookLink}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <Button
                     data-ocid="book.primary_button"
-                    className="bg-primary text-primary-foreground hover:brightness-110"
+                    className="gap-2 bg-primary text-primary-foreground hover:brightness-110"
                   >
-                    <ShoppingCart className="w-4 h-4 mr-2" /> Buy on Amazon
+                    <Tablet className="w-4 h-4" /> Kindle / eBook
+                  </Button>
+                </a>
+              )}
+              {book.amazonPaperbackLink && (
+                <a
+                  href={book.amazonPaperbackLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button
+                    data-ocid="book.secondary_button"
+                    variant="outline"
+                    className="gap-2 border-primary/50 text-primary hover:bg-primary/10"
+                  >
+                    <BookOpen className="w-4 h-4" /> Paperback
                   </Button>
                 </a>
               )}

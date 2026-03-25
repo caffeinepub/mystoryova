@@ -122,7 +122,8 @@ export interface Book {
     id: BookId;
     title: string;
     featured: boolean;
-    amazonLink: string;
+    amazonEbookLink: string;
+    amazonPaperbackLink: string;
     publishedDate: string;
     lookInsideText: string;
     authorNotes: string;

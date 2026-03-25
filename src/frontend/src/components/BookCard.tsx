@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { Eye, Heart, ShoppingCart } from "lucide-react";
+import { BookOpen, Eye, Heart, Tablet } from "lucide-react";
 import type { Book } from "../backend";
 import { useWishlist } from "../hooks/useWishlist";
 
@@ -117,9 +117,9 @@ export default function BookCard({
                 <Eye className="w-3.5 h-3.5" /> View Book
               </Button>
             </Link>
-            {book.amazonLink && (
+            {book.amazonEbookLink && (
               <a
-                href={book.amazonLink}
+                href={book.amazonEbookLink}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -128,7 +128,23 @@ export default function BookCard({
                   size="sm"
                   className="gap-1 bg-primary text-primary-foreground hover:brightness-110"
                 >
-                  <ShoppingCart className="w-3.5 h-3.5" /> Buy
+                  <Tablet className="w-3.5 h-3.5" /> eBook
+                </Button>
+              </a>
+            )}
+            {book.amazonPaperbackLink && (
+              <a
+                href={book.amazonPaperbackLink}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button
+                  data-ocid={`book.secondary_button.${index}`}
+                  size="sm"
+                  variant="outline"
+                  className="gap-1 border-primary/50 text-primary hover:bg-primary/10"
+                >
+                  <BookOpen className="w-3.5 h-3.5" /> Print
                 </Button>
               </a>
             )}
@@ -216,14 +232,36 @@ export default function BookCard({
               <Eye className="w-3.5 h-3.5 mr-1" /> View Book
             </Button>
           </Link>
-          {book.amazonLink && (
-            <a href={book.amazonLink} target="_blank" rel="noopener noreferrer">
+          {book.amazonEbookLink && (
+            <a
+              href={book.amazonEbookLink}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Button
                 data-ocid={`book.primary_button.${index}`}
                 size="sm"
                 className="bg-primary text-primary-foreground hover:brightness-110"
+                title="Kindle / eBook"
               >
-                <ShoppingCart className="w-3.5 h-3.5" />
+                <Tablet className="w-3.5 h-3.5" />
+              </Button>
+            </a>
+          )}
+          {book.amazonPaperbackLink && (
+            <a
+              href={book.amazonPaperbackLink}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button
+                data-ocid={`book.secondary_button.${index}`}
+                size="sm"
+                variant="outline"
+                className="border-primary/50 text-primary hover:bg-primary/10"
+                title="Paperback"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
               </Button>
             </a>
           )}

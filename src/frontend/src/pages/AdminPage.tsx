@@ -59,7 +59,8 @@ const EMPTY_BOOK: Omit<Book, "id"> = {
   genres: [],
   formats: [],
   coverUrl: "",
-  amazonLink: "",
+  amazonEbookLink: "",
+  amazonPaperbackLink: "",
   publishedDate: "",
   featured: false,
   lookInsideText: "",
@@ -384,12 +385,23 @@ function BookForm({
       {/* ── End Cover Upload ── */}
 
       <div>
-        <Label>Amazon Link</Label>
+        <Label>Amazon eBook Link (Kindle)</Label>
         <Input
           data-ocid="admin.input"
-          value={form.amazonLink}
-          onChange={set("amazonLink")}
+          value={form.amazonEbookLink}
+          onChange={set("amazonEbookLink")}
           className="mt-1 bg-muted/30 border-white/10"
+          placeholder="https://www.amazon.com/dp/..."
+        />
+      </div>
+      <div>
+        <Label>Amazon Paperback Link</Label>
+        <Input
+          data-ocid="admin.input"
+          value={form.amazonPaperbackLink}
+          onChange={set("amazonPaperbackLink")}
+          className="mt-1 bg-muted/30 border-white/10"
+          placeholder="https://www.amazon.com/dp/..."
         />
       </div>
       <div>

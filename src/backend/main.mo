@@ -51,13 +51,31 @@ actor {
 
   type BookId = Nat;
 
-  type Book = {
+  // V1 type kept for stable variable migration (matches previously deployed schema)
+  type BookV1 = {
     id : BookId;
     title : Text;
     subtitle : Text;
     description : Text;
     coverUrl : Text;
     amazonLink : Text;
+    formats : [Text];
+    genres : [Text];
+    publishedDate : Text;
+    authorNotes : Text;
+    lookInsideText : Text;
+    featured : Bool;
+  };
+
+  // Current Book type with separate eBook and Paperback links
+  type Book = {
+    id : BookId;
+    title : Text;
+    subtitle : Text;
+    description : Text;
+    coverUrl : Text;
+    amazonEbookLink : Text;
+    amazonPaperbackLink : Text;
     formats : [Text];
     genres : [Text];
     publishedDate : Text;
@@ -120,7 +138,12 @@ actor {
   var nextContactId = 1;
   var nextChatbotId = 1;
 
-  let books = Map.empty<BookId, Book>();
+  // Migration staging: receives old stable data (named 'books' to match previous deployment)
+  let books = Map.empty<BookId, BookV1>();
+
+  // Current books storage using new Book type
+  let booksV2 = Map.empty<BookId, Book>();
+
   let reviews = Map.empty<ReviewId, Review>();
   let blogPosts = Map.empty<BlogPostId, BlogPost>();
   let subscribers = Map.empty<Text, Subscriber>();
@@ -128,47 +151,75 @@ actor {
   let pageVisits = Map.empty<Text, Nat>();
   let chatbotKnowledge = Map.empty<ChatbotEntryId, ChatbotEntry>();
 
+  // Migrate V1 books (amazonLink) to V2 books (amazonEbookLink + amazonPaperbackLink)
+  system func postupgrade() {
+    for ((id, b) in books.entries()) {
+      if (not booksV2.containsKey(id)) {
+        let migrated : Book = {
+          id = b.id;
+          title = b.title;
+          subtitle = b.subtitle;
+          description = b.description;
+          coverUrl = b.coverUrl;
+          amazonEbookLink = b.amazonLink;
+          amazonPaperbackLink = "";
+          formats = b.formats;
+          genres = b.genres;
+          publishedDate = b.publishedDate;
+          authorNotes = b.authorNotes;
+          lookInsideText = b.lookInsideText;
+          featured = b.featured;
+        };
+        booksV2.add(id, migrated);
+        // Keep nextBookId correct after migration
+        if (b.id >= nextBookId) {
+          nextBookId := b.id + 1;
+        };
+      };
+    };
+  };
+
   public shared func createBook(book : Book) : async BookId {
     let newBook : Book = {
       book with
       id = nextBookId;
     };
-    books.add(nextBookId, newBook);
+    booksV2.add(nextBookId, newBook);
     nextBookId += 1;
     newBook.id;
   };
 
   public shared func updateBook(id : BookId, book : Book) : async () {
-    if (not books.containsKey(id)) {
+    if (not booksV2.containsKey(id)) {
       Runtime.trap("Book not found");
     };
     let updatedBook : Book = {
       book with
       id;
     };
-    books.add(id, updatedBook);
+    booksV2.add(id, updatedBook);
   };
 
   public shared func deleteBook(id : BookId) : async () {
-    if (not books.containsKey(id)) {
+    if (not booksV2.containsKey(id)) {
       Runtime.trap("Book not found");
     };
-    books.remove(id);
+    booksV2.remove(id);
   };
 
   public query func getBook(id : BookId) : async Book {
-    switch (books.get(id)) {
+    switch (booksV2.get(id)) {
       case (null) { Runtime.trap("Book not found") };
       case (?book) { book };
     };
   };
 
   public query func getAllBooks() : async [Book] {
-    books.values().toArray().sort();
+    booksV2.values().toArray().sort();
   };
 
   public shared func addReview(review : Review) : async ReviewId {
-    if (not books.containsKey(review.bookId)) {
+    if (not booksV2.containsKey(review.bookId)) {
       Runtime.trap("Book not found for review");
     };
     let newReview : Review = {
@@ -300,11 +351,11 @@ actor {
   };
 
   public query func getRelatedBooks(bookId : BookId) : async [Book] {
-    switch (books.get(bookId)) {
+    switch (booksV2.get(bookId)) {
       case (null) { Runtime.trap("Book not found") };
       case (?book) {
         let targetGenres = book.genres;
-        books.values().toArray()
+        booksV2.values().toArray()
           .filter(func(b) { b.id != bookId })
           .sort(func(b1, b2) {
             let overlap1 = countGenreOverlap(b1, targetGenres);
@@ -326,7 +377,8 @@ actor {
       subtitle = "A Literary Psychological Exploration";
       description = "A journey through the complexities of perception and reality.";
       coverUrl = "https://example.com/covers/antonyms.jpg";
-      amazonLink = "https://amazon.com/antonyms";
+      amazonEbookLink = "";
+      amazonPaperbackLink = "";
       formats = ["eBook", "Paperback"];
       genres = ["Psychological", "Literary Fiction"];
       publishedDate = "2022-01-15";
@@ -334,7 +386,7 @@ actor {
       lookInsideText = "Chapter 1: The Illusion...";
       featured = true;
     };
-    books.add(nextBookId, book1);
+    booksV2.add(nextBookId, book1);
     nextBookId += 1;
 
     let book2 : Book = {
@@ -343,7 +395,8 @@ actor {
       subtitle = "A Meditation on Loss";
       description = "An intimate exploration of grief and healing.";
       coverUrl = "https://example.com/covers/echoes.jpg";
-      amazonLink = "https://amazon.com/echoes";
+      amazonEbookLink = "";
+      amazonPaperbackLink = "";
       formats = ["eBook", "Paperback", "Hardcover"];
       genres = ["Literary Fiction", "Drama"];
       publishedDate = "2021-06-20";
@@ -351,7 +404,7 @@ actor {
       lookInsideText = "Prologue: The quiet after...";
       featured = false;
     };
-    books.add(nextBookId, book2);
+    booksV2.add(nextBookId, book2);
     nextBookId += 1;
 
     let book3 : Book = {
@@ -360,7 +413,8 @@ actor {
       subtitle = "Psychological Thriller";
       description = "A gripping tale of identity and madness.";
       coverUrl = "https://example.com/covers/fractured.jpg";
-      amazonLink = "https://amazon.com/fractured";
+      amazonEbookLink = "";
+      amazonPaperbackLink = "";
       formats = ["eBook", "Paperback"];
       genres = ["Psychological", "Thriller"];
       publishedDate = "2023-03-10";
@@ -368,7 +422,7 @@ actor {
       lookInsideText = "Part One: The first crack...";
       featured = true;
     };
-    books.add(nextBookId, book3);
+    booksV2.add(nextBookId, book3);
     nextBookId += 1;
 
     let book4 : Book = {
@@ -377,7 +431,8 @@ actor {
       subtitle = "Stories of the Unseen";
       description = "A collection of short psychological fiction.";
       coverUrl = "https://example.com/covers/whispers.jpg";
-      amazonLink = "https://amazon.com/whispers";
+      amazonEbookLink = "";
+      amazonPaperbackLink = "";
       formats = ["eBook"];
       genres = ["Literary Fiction", "Short Stories"];
       publishedDate = "2020-11-05";
@@ -385,7 +440,7 @@ actor {
       lookInsideText = "Story 1: The Voice...";
       featured = false;
     };
-    books.add(nextBookId, book4);
+    booksV2.add(nextBookId, book4);
     nextBookId += 1;
 
     let book5 : Book = {
@@ -394,7 +449,8 @@ actor {
       subtitle = "A Journey Within";
       description = "An introspective novel about self-discovery.";
       coverUrl = "https://example.com/covers/veil.jpg";
-      amazonLink = "https://amazon.com/veil";
+      amazonEbookLink = "";
+      amazonPaperbackLink = "";
       formats = ["eBook", "Paperback", "Hardcover"];
       genres = ["Literary Fiction", "Psychological"];
       publishedDate = "2024-01-18";
@@ -402,7 +458,7 @@ actor {
       lookInsideText = "Introduction: The search begins...";
       featured = true;
     };
-    books.add(nextBookId, book5);
+    booksV2.add(nextBookId, book5);
     nextBookId += 1;
 
     let post1 : BlogPost = {
