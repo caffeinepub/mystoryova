@@ -19,9 +19,9 @@ export const _CaffeineStorageRefillResult = IDL.Record({
   'success' : IDL.Opt(IDL.Bool),
   'topped_up_amount' : IDL.Opt(IDL.Nat),
 });
-export const ChatbotEntryId = IDL.Nat;
+export const ChatbotId = IDL.Nat;
 export const ChatbotEntry = IDL.Record({
-  'id' : ChatbotEntryId,
+  'id' : ChatbotId,
   'question' : IDL.Text,
   'answer' : IDL.Text,
 });
@@ -55,16 +55,23 @@ export const Book = IDL.Record({
   'id' : BookId,
   'title' : IDL.Text,
   'featured' : IDL.Bool,
-  'amazonEbookLink' : IDL.Text,
-  'amazonPaperbackLink' : IDL.Text,
   'publishedDate' : IDL.Text,
   'lookInsideText' : IDL.Text,
   'authorNotes' : IDL.Text,
   'description' : IDL.Text,
+  'amazonPaperbackLink' : IDL.Text,
+  'amazonEbookLink' : IDL.Text,
   'genres' : IDL.Vec(IDL.Text),
   'coverUrl' : IDL.Text,
   'formats' : IDL.Vec(IDL.Text),
   'subtitle' : IDL.Text,
+});
+export const ShoppingItem = IDL.Record({
+  'productName' : IDL.Text,
+  'currency' : IDL.Text,
+  'quantity' : IDL.Nat,
+  'priceInCents' : IDL.Nat,
+  'productDescription' : IDL.Text,
 });
 export const ContactId = IDL.Nat;
 export const ContactSubmission = IDL.Record({
@@ -82,6 +89,35 @@ export const Subscriber = IDL.Record({
 export const UserProfile = IDL.Record({
   'name' : IDL.Text,
   'email' : IDL.Text,
+});
+export const StripeSessionStatus = IDL.Variant({
+  'completed' : IDL.Record({
+    'userPrincipal' : IDL.Opt(IDL.Text),
+    'response' : IDL.Text,
+  }),
+  'failed' : IDL.Record({ 'error' : IDL.Text }),
+});
+export const StripeConfiguration = IDL.Record({
+  'allowedCountries' : IDL.Vec(IDL.Text),
+  'secretKey' : IDL.Text,
+});
+export const http_header = IDL.Record({
+  'value' : IDL.Text,
+  'name' : IDL.Text,
+});
+export const http_request_result = IDL.Record({
+  'status' : IDL.Nat,
+  'body' : IDL.Vec(IDL.Nat8),
+  'headers' : IDL.Vec(http_header),
+});
+export const TransformationInput = IDL.Record({
+  'context' : IDL.Vec(IDL.Nat8),
+  'response' : http_request_result,
+});
+export const TransformationOutput = IDL.Record({
+  'status' : IDL.Nat,
+  'body' : IDL.Vec(IDL.Nat8),
+  'headers' : IDL.Vec(http_header),
 });
 
 export const idlService = IDL.Service({
@@ -112,16 +148,20 @@ export const idlService = IDL.Service({
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-  'addChatbotEntry' : IDL.Func([ChatbotEntry], [ChatbotEntryId], []),
-    'changeAdminPassword' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
-    'resetAdminPasswordToDefault' : IDL.Func([], [], []),
-    'verifyAdminPassword' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
+  'addChatbotEntry' : IDL.Func([ChatbotEntry], [ChatbotId], []),
   'addReview' : IDL.Func([Review], [ReviewId], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'changeAdminPassword' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
   'createBlogPost' : IDL.Func([BlogPost], [BlogPostId], []),
   'createBook' : IDL.Func([Book], [BookId], []),
+  'createCheckoutSession' : IDL.Func(
+      [IDL.Vec(ShoppingItem), IDL.Text, IDL.Text],
+      [IDL.Text],
+      [],
+    ),
   'deleteBlogPost' : IDL.Func([BlogPostId], [], []),
   'deleteBook' : IDL.Func([BookId], [], []),
+  'generateResetPin' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Text)], []),
   'getAllBlogPosts' : IDL.Func([], [IDL.Vec(BlogPost)], ['query']),
   'getAllBooks' : IDL.Func([], [IDL.Vec(Book)], ['query']),
   'getAllChatbotEntries' : IDL.Func([], [IDL.Vec(ChatbotEntry)], ['query']),
@@ -144,19 +184,33 @@ export const idlService = IDL.Service({
   'getPublishedBlogPosts' : IDL.Func([], [IDL.Vec(BlogPost)], ['query']),
   'getRelatedBooks' : IDL.Func([BookId], [IDL.Vec(Book)], ['query']),
   'getReviewsForBook' : IDL.Func([BookId], [IDL.Vec(Review)], ['query']),
+  'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
   'recordPageVisit' : IDL.Func([IDL.Text], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'seedInitialData' : IDL.Func([], [], []),
+  'setStripeConfiguration' : IDL.Func([StripeConfiguration], [], []),
   'submitContactForm' : IDL.Func([ContactSubmission], [ContactId], []),
   'subscribeToNewsletter' : IDL.Func([IDL.Text], [], []),
+  'transform' : IDL.Func(
+      [TransformationInput],
+      [TransformationOutput],
+      ['query'],
+    ),
   'updateBlogPost' : IDL.Func([BlogPostId, BlogPost], [], []),
   'updateBook' : IDL.Func([BookId, Book], [], []),
+  'verifyAdminPassword' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
+  'verifyResetPinAndChangePassword' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Bool],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -173,9 +227,9 @@ export const idlFactory = ({ IDL }) => {
     'success' : IDL.Opt(IDL.Bool),
     'topped_up_amount' : IDL.Opt(IDL.Nat),
   });
-  const ChatbotEntryId = IDL.Nat;
+  const ChatbotId = IDL.Nat;
   const ChatbotEntry = IDL.Record({
-    'id' : ChatbotEntryId,
+    'id' : ChatbotId,
     'question' : IDL.Text,
     'answer' : IDL.Text,
   });
@@ -209,16 +263,23 @@ export const idlFactory = ({ IDL }) => {
     'id' : BookId,
     'title' : IDL.Text,
     'featured' : IDL.Bool,
-    'amazonEbookLink' : IDL.Text,
-  'amazonPaperbackLink' : IDL.Text,
     'publishedDate' : IDL.Text,
     'lookInsideText' : IDL.Text,
     'authorNotes' : IDL.Text,
     'description' : IDL.Text,
+    'amazonPaperbackLink' : IDL.Text,
+    'amazonEbookLink' : IDL.Text,
     'genres' : IDL.Vec(IDL.Text),
     'coverUrl' : IDL.Text,
     'formats' : IDL.Vec(IDL.Text),
     'subtitle' : IDL.Text,
+  });
+  const ShoppingItem = IDL.Record({
+    'productName' : IDL.Text,
+    'currency' : IDL.Text,
+    'quantity' : IDL.Nat,
+    'priceInCents' : IDL.Nat,
+    'productDescription' : IDL.Text,
   });
   const ContactId = IDL.Nat;
   const ContactSubmission = IDL.Record({
@@ -234,6 +295,32 @@ export const idlFactory = ({ IDL }) => {
     'email' : IDL.Text,
   });
   const UserProfile = IDL.Record({ 'name' : IDL.Text, 'email' : IDL.Text });
+  const StripeSessionStatus = IDL.Variant({
+    'completed' : IDL.Record({
+      'userPrincipal' : IDL.Opt(IDL.Text),
+      'response' : IDL.Text,
+    }),
+    'failed' : IDL.Record({ 'error' : IDL.Text }),
+  });
+  const StripeConfiguration = IDL.Record({
+    'allowedCountries' : IDL.Vec(IDL.Text),
+    'secretKey' : IDL.Text,
+  });
+  const http_header = IDL.Record({ 'value' : IDL.Text, 'name' : IDL.Text });
+  const http_request_result = IDL.Record({
+    'status' : IDL.Nat,
+    'body' : IDL.Vec(IDL.Nat8),
+    'headers' : IDL.Vec(http_header),
+  });
+  const TransformationInput = IDL.Record({
+    'context' : IDL.Vec(IDL.Nat8),
+    'response' : http_request_result,
+  });
+  const TransformationOutput = IDL.Record({
+    'status' : IDL.Nat,
+    'body' : IDL.Vec(IDL.Nat8),
+    'headers' : IDL.Vec(http_header),
+  });
   
   return IDL.Service({
     '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -263,16 +350,20 @@ export const idlFactory = ({ IDL }) => {
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-    'addChatbotEntry' : IDL.Func([ChatbotEntry], [ChatbotEntryId], []),
-    'changeAdminPassword' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
-    'resetAdminPasswordToDefault' : IDL.Func([], [], []),
-    'verifyAdminPassword' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
+    'addChatbotEntry' : IDL.Func([ChatbotEntry], [ChatbotId], []),
     'addReview' : IDL.Func([Review], [ReviewId], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'changeAdminPassword' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
     'createBlogPost' : IDL.Func([BlogPost], [BlogPostId], []),
     'createBook' : IDL.Func([Book], [BookId], []),
+    'createCheckoutSession' : IDL.Func(
+        [IDL.Vec(ShoppingItem), IDL.Text, IDL.Text],
+        [IDL.Text],
+        [],
+      ),
     'deleteBlogPost' : IDL.Func([BlogPostId], [], []),
     'deleteBook' : IDL.Func([BookId], [], []),
+    'generateResetPin' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Text)], []),
     'getAllBlogPosts' : IDL.Func([], [IDL.Vec(BlogPost)], ['query']),
     'getAllBooks' : IDL.Func([], [IDL.Vec(Book)], ['query']),
     'getAllChatbotEntries' : IDL.Func([], [IDL.Vec(ChatbotEntry)], ['query']),
@@ -295,19 +386,33 @@ export const idlFactory = ({ IDL }) => {
     'getPublishedBlogPosts' : IDL.Func([], [IDL.Vec(BlogPost)], ['query']),
     'getRelatedBooks' : IDL.Func([BookId], [IDL.Vec(Book)], ['query']),
     'getReviewsForBook' : IDL.Func([BookId], [IDL.Vec(Review)], ['query']),
+    'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
     'recordPageVisit' : IDL.Func([IDL.Text], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'seedInitialData' : IDL.Func([], [], []),
+    'setStripeConfiguration' : IDL.Func([StripeConfiguration], [], []),
     'submitContactForm' : IDL.Func([ContactSubmission], [ContactId], []),
     'subscribeToNewsletter' : IDL.Func([IDL.Text], [], []),
+    'transform' : IDL.Func(
+        [TransformationInput],
+        [TransformationOutput],
+        ['query'],
+      ),
     'updateBlogPost' : IDL.Func([BlogPostId, BlogPost], [], []),
     'updateBook' : IDL.Func([BookId, Book], [], []),
+    'verifyAdminPassword' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
+    'verifyResetPinAndChangePassword' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
   });
 };
 

@@ -25,12 +25,12 @@ export interface Book {
   'id' : BookId,
   'title' : string,
   'featured' : boolean,
-  'amazonEbookLink' : string,
-  'amazonPaperbackLink' : string,
   'publishedDate' : string,
   'lookInsideText' : string,
   'authorNotes' : string,
   'description' : string,
+  'amazonPaperbackLink' : string,
+  'amazonEbookLink' : string,
   'genres' : Array<string>,
   'coverUrl' : string,
   'formats' : Array<string>,
@@ -38,11 +38,11 @@ export interface Book {
 }
 export type BookId = bigint;
 export interface ChatbotEntry {
-  'id' : ChatbotEntryId,
+  'id' : ChatbotId,
   'question' : string,
   'answer' : string,
 }
-export type ChatbotEntryId = bigint;
+export type ChatbotId = bigint;
 export type ContactId = bigint;
 export interface ContactSubmission {
   'id' : ContactId,
@@ -61,7 +61,31 @@ export interface Review {
   'rating' : bigint,
 }
 export type ReviewId = bigint;
+export interface ShoppingItem {
+  'productName' : string,
+  'currency' : string,
+  'quantity' : bigint,
+  'priceInCents' : bigint,
+  'productDescription' : string,
+}
+export interface StripeConfiguration {
+  'allowedCountries' : Array<string>,
+  'secretKey' : string,
+}
+export type StripeSessionStatus = {
+    'completed' : { 'userPrincipal' : [] | [string], 'response' : string }
+  } |
+  { 'failed' : { 'error' : string } };
 export interface Subscriber { 'subscribedAt' : string, 'email' : string }
+export interface TransformationInput {
+  'context' : Uint8Array,
+  'response' : http_request_result,
+}
+export interface TransformationOutput {
+  'status' : bigint,
+  'body' : Uint8Array,
+  'headers' : Array<http_header>,
+}
 export interface UserProfile { 'name' : string, 'email' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
@@ -76,6 +100,12 @@ export interface _CaffeineStorageRefillInformation {
 export interface _CaffeineStorageRefillResult {
   'success' : [] | [boolean],
   'topped_up_amount' : [] | [bigint],
+}
+export interface http_header { 'value' : string, 'name' : string }
+export interface http_request_result {
+  'status' : bigint,
+  'body' : Uint8Array,
+  'headers' : Array<http_header>,
 }
 export interface _SERVICE {
   '_caffeineStorageBlobIsLive' : ActorMethod<[Uint8Array], boolean>,
@@ -94,16 +124,19 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
-  'addChatbotEntry' : ActorMethod<[ChatbotEntry], ChatbotEntryId>,
-  'changeAdminPassword' : ActorMethod<[string, string], boolean>,
-  'resetAdminPasswordToDefault' : ActorMethod<[], undefined>,
-  'verifyAdminPassword' : ActorMethod<[string], boolean>,
+  'addChatbotEntry' : ActorMethod<[ChatbotEntry], ChatbotId>,
   'addReview' : ActorMethod<[Review], ReviewId>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'changeAdminPassword' : ActorMethod<[string, string], boolean>,
   'createBlogPost' : ActorMethod<[BlogPost], BlogPostId>,
   'createBook' : ActorMethod<[Book], BookId>,
+  'createCheckoutSession' : ActorMethod<
+    [Array<ShoppingItem>, string, string],
+    string
+  >,
   'deleteBlogPost' : ActorMethod<[BlogPostId], undefined>,
   'deleteBook' : ActorMethod<[BookId], undefined>,
+  'generateResetPin' : ActorMethod<[string], [] | [string]>,
   'getAllBlogPosts' : ActorMethod<[], Array<BlogPost>>,
   'getAllBooks' : ActorMethod<[], Array<Book>>,
   'getAllChatbotEntries' : ActorMethod<[], Array<ChatbotEntry>>,
@@ -118,15 +151,21 @@ export interface _SERVICE {
   'getPublishedBlogPosts' : ActorMethod<[], Array<BlogPost>>,
   'getRelatedBooks' : ActorMethod<[BookId], Array<Book>>,
   'getReviewsForBook' : ActorMethod<[BookId], Array<Review>>,
+  'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'isStripeConfigured' : ActorMethod<[], boolean>,
   'recordPageVisit' : ActorMethod<[string], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'seedInitialData' : ActorMethod<[], undefined>,
+  'setStripeConfiguration' : ActorMethod<[StripeConfiguration], undefined>,
   'submitContactForm' : ActorMethod<[ContactSubmission], ContactId>,
   'subscribeToNewsletter' : ActorMethod<[string], undefined>,
+  'transform' : ActorMethod<[TransformationInput], TransformationOutput>,
   'updateBlogPost' : ActorMethod<[BlogPostId, BlogPost], undefined>,
   'updateBook' : ActorMethod<[BookId, Book], undefined>,
+  'verifyAdminPassword' : ActorMethod<[string], boolean>,
+  'verifyResetPinAndChangePassword' : ActorMethod<[string, string], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

@@ -13,7 +13,7 @@ export default function Footer() {
       data-ocid="footer.section"
     >
       <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Brand */}
           <div>
             <Link to="/" className="inline-flex items-center mb-4">
@@ -48,6 +48,43 @@ export default function Footer() {
                   </Link>
                 );
               })}
+            </nav>
+          </div>
+
+          {/* Store */}
+          <div>
+            <h4 className="text-xs tracking-[0.2em] text-primary font-semibold mb-4">
+              STORE
+            </h4>
+            <nav className="flex flex-col gap-2">
+              <Link
+                to="/store"
+                data-ocid="footer.link"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                All Products
+              </Link>
+              <Link
+                to="/store"
+                data-ocid="footer.link"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Audiobooks
+              </Link>
+              <Link
+                to="/store"
+                data-ocid="footer.link"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Merchandise
+              </Link>
+              <Link
+                to="/store/library"
+                data-ocid="footer.link"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                My Library
+              </Link>
             </nav>
           </div>
 
@@ -92,7 +129,7 @@ export default function Footer() {
           <p className="text-muted-foreground text-sm">
             © {year} Mystoryova. All rights reserved.
           </p>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap justify-center">
             <Link
               to="/privacy-policy"
               data-ocid="footer.link"
@@ -107,6 +144,14 @@ export default function Footer() {
               className="text-xs text-muted-foreground hover:text-primary transition-colors"
             >
               Terms &amp; Conditions
+            </Link>
+            <span className="text-muted-foreground/40 text-xs">·</span>
+            <Link
+              to="/return-policy"
+              data-ocid="footer.link"
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Return Policy
             </Link>
           </div>
           <p className="text-muted-foreground text-sm">

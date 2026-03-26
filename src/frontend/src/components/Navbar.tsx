@@ -1,12 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, Menu, Moon, Sun, X } from "lucide-react";
+import { Heart, Menu, Moon, ShoppingCart, Store, Sun, X } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
+import { useCart } from "../hooks/useCart";
 import { useWishlist } from "../hooks/useWishlist";
 
 const navLinks = [
   { to: "/", label: "HOME" },
   { to: "/books", label: "BOOKS" },
+  { to: "/store", label: "STORE" },
   { to: "/about", label: "BIO" },
   { to: "/blog", label: "INSIGHTS" },
   { to: "/contact", label: "CONTACT" },
@@ -15,6 +17,7 @@ const navLinks = [
 export default function Navbar() {
   const { theme, setTheme } = useTheme();
   const { count } = useWishlist();
+  const { cartCount } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -57,6 +60,21 @@ export default function Navbar() {
 
           {/* Right controls */}
           <div className="flex items-center gap-3">
+            {/* Cart */}
+            <Link
+              to="/store/cart"
+              data-ocid="nav.link"
+              className="relative p-2 text-muted-foreground hover:text-primary transition-colors"
+              aria-label="Cart"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center font-bold">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+            {/* Wishlist */}
             <Link
               to="/books"
               data-ocid="nav.link"
@@ -116,6 +134,15 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              to="/store/cart"
+              data-ocid="nav.link"
+              onClick={() => setMobileOpen(false)}
+              className="text-sm tracking-[0.15em] font-medium text-muted-foreground hover:text-foreground transition-colors py-1 flex items-center gap-2"
+            >
+              <Store className="w-4 h-4" /> CART{" "}
+              {cartCount > 0 ? `(${cartCount})` : ""}
+            </Link>
             <Link
               to="/admin"
               data-ocid="nav.link"

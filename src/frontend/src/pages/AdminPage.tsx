@@ -56,6 +56,8 @@ import {
   useUpdateBook,
 } from "../hooks/useQueries";
 import { StorageClient } from "../utils/StorageClient";
+import AdminOrdersTab from "./AdminOrdersTab";
+import AdminStoreTab from "./AdminStoreTab";
 
 const EMPTY_BOOK: Omit<Book, "id"> = {
   title: "",
@@ -942,6 +944,12 @@ export default function AdminPage() {
             <TabsTrigger value="contacts" data-ocid="admin.tab">
               Contact
             </TabsTrigger>
+            <TabsTrigger value="store" data-ocid="admin.tab">
+              Store
+            </TabsTrigger>
+            <TabsTrigger value="orders" data-ocid="admin.tab">
+              Orders
+            </TabsTrigger>
             <TabsTrigger value="settings" data-ocid="admin.tab">
               Settings
             </TabsTrigger>
@@ -1345,6 +1353,14 @@ export default function AdminPage() {
             </div>
           </TabsContent>
           {/* Settings */}
+          <TabsContent value="store" data-ocid="admin.panel">
+            <AdminStoreTab />
+          </TabsContent>
+
+          <TabsContent value="orders" data-ocid="admin.panel">
+            <AdminOrdersTab />
+          </TabsContent>
+
           <TabsContent value="settings" data-ocid="admin.panel">
             <ChangePasswordPanel />
           </TabsContent>

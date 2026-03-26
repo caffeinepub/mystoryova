@@ -1,0 +1,294 @@
+import { createContext, useContext, useEffect, useState } from "react";
+
+export interface MerchProduct {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  category: string;
+  inStock: boolean;
+  featured: boolean;
+}
+
+export interface AudiobookProduct {
+  id: string;
+  bookId: string;
+  title: string;
+  description: string;
+  price: number;
+  sampleUrl: string;
+  fullAudioUrl: string;
+  duration: string;
+  coverUrl: string;
+  narrator: string;
+}
+
+export interface OrderItem {
+  productId: string;
+  productType: "merch" | "audiobook";
+  quantity: number;
+  price: number;
+  title: string;
+}
+
+export interface ShippingAddress {
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+}
+
+export interface Order {
+  id: string;
+  customerEmail: string;
+  customerName: string;
+  items: OrderItem[];
+  totalAmount: number;
+  stripeSessionId: string;
+  status: "pending" | "paid" | "fulfilled" | "cancelled";
+  createdAt: string;
+  shippingAddress?: ShippingAddress;
+}
+
+const SEED_MERCH: MerchProduct[] = [
+  {
+    id: "merch_1",
+    title: "Mystoryova Literary Tee",
+    description:
+      'Premium cotton tee featuring the iconic Mystoryova logo and the tagline "Stories That Stay With You". Soft, comfortable, and perfect for the avid reader.',
+    price: 2499,
+    imageUrl: "",
+    category: "T-Shirt",
+    inStock: true,
+    featured: true,
+  },
+  {
+    id: "merch_2",
+    title: "The Ember Prophecy Hoodie",
+    description:
+      "Inspired by the world of The Ember Prophecy. A cozy, heavyweight hoodie with a subtle ember design on the chest. Perfect for late-night reading sessions.",
+    price: 4499,
+    imageUrl: "",
+    category: "Hoodie",
+    inStock: true,
+    featured: true,
+  },
+  {
+    id: "merch_3",
+    title: "Author's Morning Mug",
+    description:
+      "Start your day with stories. This ceramic mug features a handwritten quote from O. Chiddarwar on one side and the Mystoryova emblem on the other.",
+    price: 1699,
+    imageUrl: "",
+    category: "Mug",
+    inStock: true,
+    featured: false,
+  },
+  {
+    id: "merch_4",
+    title: "The Long Climb Tote Bag",
+    description:
+      "A sturdy canvas tote inspired by The Long Climb. Features original artwork and a quote from the book. Holds your next great adventure.",
+    price: 1999,
+    imageUrl: "",
+    category: "Tote Bag",
+    inStock: true,
+    featured: false,
+  },
+  {
+    id: "merch_5",
+    title: "Letter in the Rain Art Print",
+    description:
+      "A signed art poster inspired by The Letter in the Rain. Printed on archival matte paper. A beautiful addition to any reader's space.",
+    price: 2999,
+    imageUrl: "",
+    category: "Poster",
+    inStock: true,
+    featured: true,
+  },
+];
+
+const SEED_AUDIOBOOKS: AudiobookProduct[] = [
+  {
+    id: "audio_1",
+    bookId: "1",
+    title: "The Long Climb",
+    description:
+      "An emotional journey of perseverance and self-discovery. Listen to this powerful story narrated with depth and warmth, bringing every character vividly to life.",
+    price: 1499,
+    sampleUrl: "",
+    fullAudioUrl: "",
+    duration: "6h 42m",
+    coverUrl: "",
+    narrator: "O. Chiddarwar",
+  },
+  {
+    id: "audio_2",
+    bookId: "2",
+    title: "The Ember Prophecy",
+    description:
+      "A spellbinding fantasy epic narrated with passion and intensity. Experience the world of prophecy and destiny in stunning audio detail.",
+    price: 1799,
+    sampleUrl: "",
+    fullAudioUrl: "",
+    duration: "9h 15m",
+    coverUrl: "",
+    narrator: "O. Chiddarwar",
+  },
+  {
+    id: "audio_3",
+    bookId: "3",
+    title: "The Letter in the Rain",
+    description:
+      "A romantic and poignant story of love, loss, and letters never sent. Hear every heartbeat in this exquisite audio performance.",
+    price: 1299,
+    sampleUrl: "",
+    fullAudioUrl: "",
+    duration: "5h 58m",
+    coverUrl: "",
+    narrator: "O. Chiddarwar",
+  },
+];
+
+interface StoreContextValue {
+  merch: MerchProduct[];
+  audiobooks: AudiobookProduct[];
+  orders: Order[];
+  addMerch: (p: Omit<MerchProduct, "id">) => void;
+  updateMerch: (id: string, p: Partial<MerchProduct>) => void;
+  deleteMerch: (id: string) => void;
+  addAudiobook: (a: Omit<AudiobookProduct, "id">) => void;
+  updateAudiobook: (id: string, a: Partial<AudiobookProduct>) => void;
+  deleteAudiobook: (id: string) => void;
+  addOrder: (o: Omit<Order, "id" | "createdAt">) => Order;
+  updateOrderStatus: (
+    id: string,
+    status: Order["status"],
+    sessionId?: string,
+  ) => void;
+  getPurchasedAudiobooks: (email: string) => AudiobookProduct[];
+}
+
+const StoreContext = createContext<StoreContextValue | null>(null);
+
+function load<T>(key: string, seed: T): T {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : seed;
+  } catch {
+    return seed;
+  }
+}
+
+export function StoreProvider({ children }: { children: React.ReactNode }) {
+  const [merch, setMerch] = useState<MerchProduct[]>(() =>
+    load("mystoryova_merch", SEED_MERCH),
+  );
+  const [audiobooks, setAudiobooks] = useState<AudiobookProduct[]>(() =>
+    load("mystoryova_audiobooks", SEED_AUDIOBOOKS),
+  );
+  const [orders, setOrders] = useState<Order[]>(() =>
+    load("mystoryova_orders", []),
+  );
+
+  useEffect(() => {
+    localStorage.setItem("mystoryova_merch", JSON.stringify(merch));
+  }, [merch]);
+  useEffect(() => {
+    localStorage.setItem("mystoryova_audiobooks", JSON.stringify(audiobooks));
+  }, [audiobooks]);
+  useEffect(() => {
+    localStorage.setItem("mystoryova_orders", JSON.stringify(orders));
+  }, [orders]);
+
+  const addMerch = (p: Omit<MerchProduct, "id">) => {
+    setMerch((prev) => [...prev, { ...p, id: `merch_${Date.now()}` }]);
+  };
+  const updateMerch = (id: string, p: Partial<MerchProduct>) => {
+    setMerch((prev) => prev.map((m) => (m.id === id ? { ...m, ...p } : m)));
+  };
+  const deleteMerch = (id: string) => {
+    setMerch((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const addAudiobook = (a: Omit<AudiobookProduct, "id">) => {
+    setAudiobooks((prev) => [...prev, { ...a, id: `audio_${Date.now()}` }]);
+  };
+  const updateAudiobook = (id: string, a: Partial<AudiobookProduct>) => {
+    setAudiobooks((prev) =>
+      prev.map((ab) => (ab.id === id ? { ...ab, ...a } : ab)),
+    );
+  };
+  const deleteAudiobook = (id: string) => {
+    setAudiobooks((prev) => prev.filter((ab) => ab.id !== id));
+  };
+
+  const addOrder = (o: Omit<Order, "id" | "createdAt">): Order => {
+    const order: Order = {
+      ...o,
+      id: `order_${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    setOrders((prev) => [...prev, order]);
+    return order;
+  };
+
+  const updateOrderStatus = (
+    id: string,
+    status: Order["status"],
+    sessionId?: string,
+  ) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === id
+          ? { ...o, status, stripeSessionId: sessionId ?? o.stripeSessionId }
+          : o,
+      ),
+    );
+  };
+
+  const getPurchasedAudiobooks = (email: string): AudiobookProduct[] => {
+    const paidOrders = orders.filter(
+      (o) =>
+        o.customerEmail.toLowerCase() === email.toLowerCase() &&
+        (o.status === "paid" || o.status === "fulfilled"),
+    );
+    const purchasedIds = new Set<string>();
+    for (const order of paidOrders) {
+      for (const item of order.items) {
+        if (item.productType === "audiobook") purchasedIds.add(item.productId);
+      }
+    }
+    return audiobooks.filter((ab) => purchasedIds.has(ab.id));
+  };
+
+  return (
+    <StoreContext.Provider
+      value={{
+        merch,
+        audiobooks,
+        orders,
+        addMerch,
+        updateMerch,
+        deleteMerch,
+        addAudiobook,
+        updateAudiobook,
+        deleteAudiobook,
+        addOrder,
+        updateOrderStatus,
+        getPurchasedAudiobooks,
+      }}
+    >
+      {children}
+    </StoreContext.Provider>
+  );
+}
+
+export function useStore() {
+  const ctx = useContext(StoreContext);
+  if (!ctx) throw new Error("useStore must be used within StoreProvider");
+  return ctx;
+}

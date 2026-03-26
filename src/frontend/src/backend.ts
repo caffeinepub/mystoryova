@@ -89,14 +89,15 @@ export class ExternalBlob {
         return this;
     }
 }
-export interface UserProfile {
-    name: string;
-    email: string;
+export interface Review {
+    id: ReviewId;
+    reviewDate: string;
+    bookId: BookId;
+    reviewText: string;
+    reviewerName: string;
+    rating: bigint;
 }
-export interface _CaffeineStorageRefillResult {
-    success?: boolean;
-    topped_up_amount?: bigint;
-}
+export type BookId = bigint;
 export interface BlogPost {
     id: BlogPostId;
     title: string;
@@ -106,6 +107,11 @@ export interface BlogPost {
     tags: Array<string>;
     readTime: bigint;
     excerpt: string;
+}
+export interface TransformationOutput {
+    status: bigint;
+    body: Uint8Array;
+    headers: Array<http_header>;
 }
 export interface ContactSubmission {
     id: ContactId;
@@ -122,12 +128,12 @@ export interface Book {
     id: BookId;
     title: string;
     featured: boolean;
-    amazonEbookLink: string;
-    amazonPaperbackLink: string;
     publishedDate: string;
     lookInsideText: string;
     authorNotes: string;
     description: string;
+    amazonPaperbackLink: string;
+    amazonEbookLink: string;
     genres: Array<string>;
     coverUrl: string;
     formats: Array<string>;
@@ -137,28 +143,63 @@ export interface _CaffeineStorageCreateCertificateResult {
     method: string;
     blob_hash: string;
 }
+export type ChatbotId = bigint;
 export interface ChatbotEntry {
-    id: ChatbotEntryId;
+    id: ChatbotId;
     question: string;
     answer: string;
 }
+export interface http_header {
+    value: string;
+    name: string;
+}
+export interface http_request_result {
+    status: bigint;
+    body: Uint8Array;
+    headers: Array<http_header>;
+}
+export interface ShoppingItem {
+    productName: string;
+    currency: string;
+    quantity: bigint;
+    priceInCents: bigint;
+    productDescription: string;
+}
 export type BlogPostId = bigint;
+export interface TransformationInput {
+    context: Uint8Array;
+    response: http_request_result;
+}
 export interface Subscriber {
     subscribedAt: string;
     email: string;
 }
-export type ReviewId = bigint;
-export type BookId = bigint;
-export type ContactId = bigint;
-export interface Review {
-    id: ReviewId;
-    reviewDate: string;
-    bookId: BookId;
-    reviewText: string;
-    reviewerName: string;
-    rating: bigint;
+export type StripeSessionStatus = {
+    __kind__: "completed";
+    completed: {
+        userPrincipal?: string;
+        response: string;
+    };
+} | {
+    __kind__: "failed";
+    failed: {
+        error: string;
+    };
+};
+export interface StripeConfiguration {
+    allowedCountries: Array<string>;
+    secretKey: string;
 }
-export type ChatbotEntryId = bigint;
+export type ReviewId = bigint;
+export type ContactId = bigint;
+export interface _CaffeineStorageRefillResult {
+    success?: boolean;
+    topped_up_amount?: bigint;
+}
+export interface UserProfile {
+    name: string;
+    email: string;
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
@@ -172,13 +213,16 @@ export interface backendInterface {
     _caffeineStorageRefillCashier(refillInformation: _CaffeineStorageRefillInformation | null): Promise<_CaffeineStorageRefillResult>;
     _caffeineStorageUpdateGatewayPrincipals(): Promise<void>;
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
-    addChatbotEntry(entry: ChatbotEntry): Promise<ChatbotEntryId>;
+    addChatbotEntry(entry: ChatbotEntry): Promise<ChatbotId>;
     addReview(review: Review): Promise<ReviewId>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    changeAdminPassword(oldPassword: string, newPassword: string): Promise<boolean>;
     createBlogPost(post: BlogPost): Promise<BlogPostId>;
     createBook(book: Book): Promise<BookId>;
+    createCheckoutSession(items: Array<ShoppingItem>, successUrl: string, cancelUrl: string): Promise<string>;
     deleteBlogPost(id: BlogPostId): Promise<void>;
     deleteBook(id: BookId): Promise<void>;
+    generateResetPin(email: string): Promise<string | null>;
     getAllBlogPosts(): Promise<Array<BlogPost>>;
     getAllBooks(): Promise<Array<Book>>;
     getAllChatbotEntries(): Promise<Array<ChatbotEntry>>;
@@ -193,21 +237,23 @@ export interface backendInterface {
     getPublishedBlogPosts(): Promise<Array<BlogPost>>;
     getRelatedBooks(bookId: BookId): Promise<Array<Book>>;
     getReviewsForBook(bookId: BookId): Promise<Array<Review>>;
+    getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    isStripeConfigured(): Promise<boolean>;
     recordPageVisit(pageName: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     seedInitialData(): Promise<void>;
+    setStripeConfiguration(config: StripeConfiguration): Promise<void>;
     submitContactForm(submission: ContactSubmission): Promise<ContactId>;
     subscribeToNewsletter(email: string): Promise<void>;
+    transform(input: TransformationInput): Promise<TransformationOutput>;
     updateBlogPost(id: BlogPostId, post: BlogPost): Promise<void>;
     updateBook(id: BookId, book: Book): Promise<void>;
     verifyAdminPassword(password: string): Promise<boolean>;
-    changeAdminPassword(oldPassword: string, newPassword: string): Promise<boolean>;
-    generateResetPin(email: string): Promise<[string] | []>;
     verifyResetPinAndChangePassword(pin: string, newPassword: string): Promise<boolean>;
 }
-import type { UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { StripeSessionStatus as _StripeSessionStatus, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _caffeineStorageBlobIsLive(arg0: Uint8Array): Promise<boolean> {
@@ -308,7 +354,7 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async addChatbotEntry(arg0: ChatbotEntry): Promise<ChatbotEntryId> {
+    async addChatbotEntry(arg0: ChatbotEntry): Promise<ChatbotId> {
         if (this.processError) {
             try {
                 const result = await this.actor.addChatbotEntry(arg0);
@@ -350,6 +396,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async changeAdminPassword(arg0: string, arg1: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.changeAdminPassword(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.changeAdminPassword(arg0, arg1);
+            return result;
+        }
+    }
     async createBlogPost(arg0: BlogPost): Promise<BlogPostId> {
         if (this.processError) {
             try {
@@ -375,6 +435,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.createBook(arg0);
+            return result;
+        }
+    }
+    async createCheckoutSession(arg0: Array<ShoppingItem>, arg1: string, arg2: string): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createCheckoutSession(arg0, arg1, arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createCheckoutSession(arg0, arg1, arg2);
             return result;
         }
     }
@@ -404,6 +478,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.deleteBook(arg0);
             return result;
+        }
+    }
+    async generateResetPin(arg0: string): Promise<string | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.generateResetPin(arg0);
+                return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.generateResetPin(arg0);
+            return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
         }
     }
     async getAllBlogPosts(): Promise<Array<BlogPost>> {
@@ -522,28 +610,28 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n11(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n11(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n11(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n12(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n11(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n12(this._uploadFile, this._downloadFile, result);
         }
     }
     async getPageVisits(arg0: string): Promise<bigint> {
@@ -602,18 +690,32 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getStripeSessionStatus(arg0: string): Promise<StripeSessionStatus> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getStripeSessionStatus(arg0);
+                return from_candid_StripeSessionStatus_n14(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getStripeSessionStatus(arg0);
+            return from_candid_StripeSessionStatus_n14(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n11(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n10(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n11(this._uploadFile, this._downloadFile, result);
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -627,6 +729,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isCallerAdmin();
+            return result;
+        }
+    }
+    async isStripeConfigured(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.isStripeConfigured();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.isStripeConfigured();
             return result;
         }
     }
@@ -672,6 +788,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async setStripeConfiguration(arg0: StripeConfiguration): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setStripeConfiguration(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setStripeConfiguration(arg0);
+            return result;
+        }
+    }
     async submitContactForm(arg0: ContactSubmission): Promise<ContactId> {
         if (this.processError) {
             try {
@@ -700,6 +830,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async transform(arg0: TransformationInput): Promise<TransformationOutput> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.transform(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.transform(arg0);
+            return result;
+        }
+    }
     async updateBlogPost(arg0: BlogPostId, arg1: BlogPost): Promise<void> {
         if (this.processError) {
             try {
@@ -713,20 +857,6 @@ export class Backend implements backendInterface {
             const result = await this.actor.updateBlogPost(arg0, arg1);
             return result;
         }
-    }
-    async verifyAdminPassword(arg0: string): Promise<boolean> {
-        const result = await this.actor.verifyAdminPassword(arg0);
-        return result;
-    }
-    async changeAdminPassword(arg0: string, arg1: string): Promise<boolean> {
-        const result = await this.actor.changeAdminPassword(arg0, arg1);
-        return result;
-    }
-    async generateResetPin(email: string): Promise<[string] | []> {
-        return await this.actor.generateResetPin(email);
-    }
-    async verifyResetPinAndChangePassword(pin: string, newPassword: string): Promise<boolean> {
-        return await this.actor.verifyResetPinAndChangePassword(pin, newPassword);
     }
     async updateBook(arg0: BookId, arg1: Book): Promise<void> {
         if (this.processError) {
@@ -742,14 +872,48 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async verifyAdminPassword(arg0: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.verifyAdminPassword(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.verifyAdminPassword(arg0);
+            return result;
+        }
+    }
+    async verifyResetPinAndChangePassword(arg0: string, arg1: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.verifyResetPinAndChangePassword(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.verifyResetPinAndChangePassword(arg0, arg1);
+            return result;
+        }
+    }
 }
-function from_candid_UserRole_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n12(_uploadFile, _downloadFile, value);
+function from_candid_StripeSessionStatus_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _StripeSessionStatus): StripeSessionStatus {
+    return from_candid_variant_n15(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserRole_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n13(_uploadFile, _downloadFile, value);
 }
 function from_candid__CaffeineStorageRefillResult_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: __CaffeineStorageRefillResult): _CaffeineStorageRefillResult {
     return from_candid_record_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+function from_candid_opt_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
+    return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [boolean]): boolean | null {
@@ -757,6 +921,18 @@ function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Ar
 }
 function from_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [bigint]): bigint | null {
     return value.length === 0 ? null : value[0];
+}
+function from_candid_record_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    userPrincipal: [] | [string];
+    response: string;
+}): {
+    userPrincipal?: string;
+    response: string;
+} {
+    return {
+        userPrincipal: record_opt_to_undefined(from_candid_opt_n10(_uploadFile, _downloadFile, value.userPrincipal)),
+        response: value.response
+    };
 }
 function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     success: [] | [boolean];
@@ -770,7 +946,7 @@ function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint
         topped_up_amount: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.topped_up_amount))
     };
 }
-function from_candid_variant_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
@@ -778,6 +954,35 @@ function from_candid_variant_n12(_uploadFile: (file: ExternalBlob) => Promise<Ui
     guest: null;
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
+}
+function from_candid_variant_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    completed: {
+        userPrincipal: [] | [string];
+        response: string;
+    };
+} | {
+    failed: {
+        error: string;
+    };
+}): {
+    __kind__: "completed";
+    completed: {
+        userPrincipal?: string;
+        response: string;
+    };
+} | {
+    __kind__: "failed";
+    failed: {
+        error: string;
+    };
+} {
+    return "completed" in value ? {
+        __kind__: "completed",
+        completed: from_candid_record_n16(_uploadFile, _downloadFile, value.completed)
+    } : "failed" in value ? {
+        __kind__: "failed",
+        failed: value.failed
+    } : value;
 }
 function to_candid_UserRole_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n9(_uploadFile, _downloadFile, value);

@@ -1,24 +1,24 @@
 # Mystoryova
 
 ## Current State
-Fully deployed author website with pages: Home, Books, Book Detail, About, Blog, Blog Detail, Contact, Admin. Footer shows navigation, social links, and copyright.
+The store has Printful (international) already integrated in the backend with `setPrintfulApiKey` and `fulfillPrintfulOrder`. The AdminOrdersTab only shows the Stripe configuration section -- there is no UI to trigger fulfillment or configure Printful/Printrove API keys.
 
 ## Requested Changes (Diff)
 
 ### Add
-- `/privacy-policy` page with Privacy Policy content relevant to an author website (data collected via newsletter, contact form, cookies; third-party links like Amazon; no selling of personal data; contact email mystoryova@gmail.com)
-- `/terms` page with Terms and Conditions (use of site, intellectual property, book purchases via Amazon, disclaimer, governing law)
-- Footer links to both pages in the bottom bar alongside the copyright notice
+- Printrove API integration in backend (setPrintroveApiKey + fulfillPrintroveOrder via HTTP outcall to `https://www.printrove.com/api/v2/orders`)
+- "Fulfillment" section in AdminOrdersTab showing two sub-sections: Printrove (India) and Printful (International)
+- Per-order "Fulfill" button in the orders table that opens a modal to choose Printrove or Printful, then triggers the backend call
+- Order detail modal shows `printfulOrderId` field as "Fulfillment Ref"
 
 ### Modify
-- `Footer.tsx`: add "Privacy Policy" and "Terms" links in the bottom bar
-- `App.tsx`: register `/privacy-policy` and `/terms` routes
+- AdminOrdersTab: Add Printrove config card (API key input + save), add Printful config card (API key input + save, which was previously missing from UI), add per-row Fulfill button for paid/unfulfilled orders
+- Backend main.mo: Add `stable var printroveApiKey`, `setPrintroveApiKey`, `fulfillPrintroveOrder`, and `buildPrintroveOrderBody` functions
 
 ### Remove
-- Nothing
+- Nothing removed
 
 ## Implementation Plan
-1. Create `src/frontend/src/pages/PrivacyPolicyPage.tsx` with full privacy policy content
-2. Create `src/frontend/src/pages/TermsPage.tsx` with full terms and conditions content
-3. Update `App.tsx` to import and register both new routes
-4. Update `Footer.tsx` to add links to both pages in the bottom copyright bar
+1. Update backend main.mo: add Printrove stable var, setter, fulfillment function with HTTP outcall to Printrove API
+2. Regenerate backend.d.ts to expose new functions
+3. Update AdminOrdersTab: add Fulfillment config section (Printrove + Printful cards), add "Fulfill" button per row that opens a choose-provider modal

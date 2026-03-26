@@ -4,9 +4,19 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Link, useParams } from "@tanstack/react-router";
-import { ArrowLeft, BookOpen, MessageSquare, Star, Tablet } from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpen,
+  Clock,
+  Headphones,
+  MessageSquare,
+  Mic,
+  Star,
+  Tablet,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import AudioPlayer from "../components/AudioPlayer";
 import BookCard, { getBookCover } from "../components/BookCard";
 import ScrollReveal from "../components/ScrollReveal";
 import { useMetaTags } from "../hooks/useMetaTags";
@@ -16,6 +26,7 @@ import {
   useGetRelatedBooks,
   useGetReviewsForBook,
 } from "../hooks/useQueries";
+import { useStore } from "../hooks/useStore";
 
 function StarRating({
   value,
@@ -68,6 +79,7 @@ export default function BookDetailPage() {
   const { data: reviews = [], isLoading: reviewsLoading } =
     useGetReviewsForBook(id);
   const addReview = useAddReview();
+  const { audiobooks } = useStore();
 
   const [reviewerName, setReviewerName] = useState("");
   const [rating, setRating] = useState(0);
@@ -128,6 +140,11 @@ export default function BookDetailPage() {
   const cover = getBookCover(book);
   const sortedReviews = [...reviews].sort((a, b) =>
     b.reviewDate.localeCompare(a.reviewDate),
+  );
+
+  // Find audiobook linked to this book
+  const linkedAudiobook = audiobooks.find(
+    (ab) => ab.bookId === String(book.id),
   );
 
   return (
@@ -197,41 +214,99 @@ export default function BookDetailPage() {
                   </Badge>
                 ))}
               </div>
-              {book.amazonEbookLink && (
-                <a
-                  href={book.amazonEbookLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button
-                    data-ocid="book.primary_button"
-                    className="gap-2 bg-primary text-primary-foreground hover:brightness-110"
+              <div className="flex flex-wrap gap-3">
+                {book.amazonEbookLink && (
+                  <a
+                    href={book.amazonEbookLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    <Tablet className="w-4 h-4" /> Kindle / eBook
-                  </Button>
-                </a>
-              )}
-              {book.amazonPaperbackLink && (
-                <a
-                  href={book.amazonPaperbackLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button
-                    data-ocid="book.secondary_button"
-                    variant="outline"
-                    className="gap-2 border-primary/50 text-primary hover:bg-primary/10"
+                    <Button
+                      data-ocid="book.primary_button"
+                      className="gap-2 bg-primary text-primary-foreground hover:brightness-110"
+                    >
+                      <Tablet className="w-4 h-4" /> Kindle / eBook
+                    </Button>
+                  </a>
+                )}
+                {book.amazonPaperbackLink && (
+                  <a
+                    href={book.amazonPaperbackLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    <BookOpen className="w-4 h-4" /> Paperback
-                  </Button>
-                </a>
-              )}
+                    <Button
+                      data-ocid="book.secondary_button"
+                      variant="outline"
+                      className="gap-2 border-primary/50 text-primary hover:bg-primary/10"
+                    >
+                      <BookOpen className="w-4 h-4" /> Paperback
+                    </Button>
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-16 space-y-16">
+        {/* Audiobook Section */}
+        {linkedAudiobook && (
+          <ScrollReveal>
+            <section
+              className="glass rounded-2xl p-8 border border-primary/20"
+              data-ocid="book.panel"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <Headphones className="w-5 h-5 text-primary" />
+                <h2 className="font-serif text-2xl font-bold text-foreground">
+                  Available as Audiobook
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                <div className="space-y-4">
+                  <div className="flex gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <Mic className="w-4 h-4 text-primary" />
+                      {linkedAudiobook.narrator}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-primary" />
+                      {linkedAudiobook.duration}
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    {linkedAudiobook.description}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <span className="font-serif text-2xl font-bold text-primary">
+                      ${(linkedAudiobook.price / 100).toFixed(2)}
+                    </span>
+                    <Link
+                      to="/store/audiobooks/$id"
+                      params={{ id: linkedAudiobook.id }}
+                    >
+                      <Button
+                        data-ocid="book.primary_button"
+                        className="gap-2 bg-primary text-primary-foreground hover:brightness-110"
+                      >
+                        <Headphones className="w-4 h-4" /> Buy Audiobook
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+                {linkedAudiobook.sampleUrl && (
+                  <AudioPlayer
+                    src={linkedAudiobook.sampleUrl}
+                    title={`Sample — ${linkedAudiobook.title}`}
+                  />
+                )}
+              </div>
+            </section>
+          </ScrollReveal>
+        )}
+
         {book.lookInsideText && (
           <ScrollReveal>
             <section>

@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
             Welcome to Mystoryova, the official website of O. Chiddarwar. Your
             privacy is important to us. This Privacy Policy explains how we
             collect, use, and protect information when you visit and interact
-            with mystoryova.com. By using this site, you agree to the practices
+            with Mystoryova. By using this site, you agree to the practices
             described here.
           </p>
         </section>
@@ -45,6 +45,12 @@ export default function PrivacyPolicyPage() {
             <li>
               <strong className="text-foreground">Reader Reviews:</strong> Your
               name and any review content you submit on book pages.
+            </li>
+            <li>
+              <strong className="text-foreground">Store Purchases:</strong> Your
+              name, email address, and shipping address when placing an order
+              through our store. Payment details are processed securely by
+              Stripe and are never stored by us.
             </li>
             <li>
               <strong className="text-foreground">
@@ -75,6 +81,14 @@ export default function PrivacyPolicyPage() {
               submission).
             </li>
             <li>
+              Process and fulfil orders placed through the Mystoryova Store,
+              including sending order confirmation emails.
+            </li>
+            <li>
+              Handle return and refund requests in accordance with our Return
+              Policy.
+            </li>
+            <li>
               Analyse site usage to improve performance and user experience.
             </li>
             <li>Maintain the security and integrity of our platform.</li>
@@ -82,6 +96,27 @@ export default function PrivacyPolicyPage() {
           <p className="mt-4">
             We do not sell, rent, or share your personal information with third
             parties for marketing purposes.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-serif text-2xl font-semibold text-primary mb-4">
+            Payments
+          </h2>
+          <p>
+            All payments processed through the Mystoryova Store are handled by
+            Stripe, a PCI-DSS compliant payment processor. We do not store your
+            card number, CVV, or full payment details on our servers. By
+            completing a purchase, you also agree to{" "}
+            <a
+              href="https://stripe.com/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Stripe&apos;s Privacy Policy
+            </a>
+            .
           </p>
         </section>
 
@@ -116,7 +151,7 @@ export default function PrivacyPolicyPage() {
 
         <section>
           <h2 className="font-serif text-2xl font-semibold text-primary mb-4">
-            Children's Privacy
+            Children&apos;s Privacy
           </h2>
           <p>
             This website is not directed at children under the age of 13. We do

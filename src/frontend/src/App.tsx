@@ -12,15 +12,24 @@ import ChatbotWidget from "./components/ChatbotWidget";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import { AdminProvider } from "./hooks/useAdmin";
+import { CartProvider } from "./hooks/useCart";
+import { StoreProvider } from "./hooks/useStore";
 import AboutPage from "./pages/AboutPage";
 import AdminPage from "./pages/AdminPage";
+import AudiobookDetailPage from "./pages/AudiobookDetailPage";
 import BlogDetailPage from "./pages/BlogDetailPage";
 import BlogPage from "./pages/BlogPage";
 import BookDetailPage from "./pages/BookDetailPage";
 import BooksPage from "./pages/BooksPage";
+import CartPage from "./pages/CartPage";
 import ContactPage from "./pages/ContactPage";
 import HomePage from "./pages/HomePage";
+import MerchDetailPage from "./pages/MerchDetailPage";
+import MyLibraryPage from "./pages/MyLibraryPage";
+import OrderSuccessPage from "./pages/OrderSuccessPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import ReturnPolicyPage from "./pages/ReturnPolicyPage";
+import StorePage from "./pages/StorePage";
 import TermsPage from "./pages/TermsPage";
 
 function RootLayout() {
@@ -32,15 +41,19 @@ function RootLayout() {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-      <div className="min-h-screen bg-background text-foreground flex flex-col">
-        <Navbar />
-        <main className="flex-1">
-          <Outlet />
-        </main>
-        <Footer />
-        <ChatbotWidget />
-        <Toaster />
-      </div>
+      <StoreProvider>
+        <CartProvider>
+          <div className="min-h-screen bg-background text-foreground flex flex-col">
+            <Navbar />
+            <main className="flex-1">
+              <Outlet />
+            </main>
+            <Footer />
+            <ChatbotWidget />
+            <Toaster />
+          </div>
+        </CartProvider>
+      </StoreProvider>
     </ThemeProvider>
   );
 }
@@ -141,6 +154,41 @@ const termsRoute = createRoute({
   path: "/terms",
   component: TermsPage,
 });
+const returnPolicyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/return-policy",
+  component: ReturnPolicyPage,
+});
+const storeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/store",
+  component: StorePage,
+});
+const audiobookDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/store/audiobooks/$id",
+  component: AudiobookDetailPage,
+});
+const merchDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/store/merch/$id",
+  component: MerchDetailPage,
+});
+const cartRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/store/cart",
+  component: CartPage,
+});
+const orderSuccessRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/store/success",
+  component: OrderSuccessPage,
+});
+const myLibraryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/store/library",
+  component: MyLibraryPage,
+});
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -153,6 +201,13 @@ const routeTree = rootRoute.addChildren([
   adminRoute,
   privacyRoute,
   termsRoute,
+  returnPolicyRoute,
+  storeRoute,
+  audiobookDetailRoute,
+  merchDetailRoute,
+  cartRoute,
+  orderSuccessRoute,
+  myLibraryRoute,
 ]);
 const router = createRouter({ routeTree });
 
