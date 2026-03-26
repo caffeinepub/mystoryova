@@ -8,6 +8,7 @@ import {
   Headphones,
   MapPin,
   Minus,
+  Phone,
   Plus,
   ShoppingBag,
   ShoppingCart,
@@ -39,6 +40,7 @@ export default function CartPage() {
   const [addressState, setAddressState] = useState("");
   const [pincode, setPincode] = useState("");
   const [country, setCountry] = useState("India");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   const hasMerchItems = items.some((i) => i.type === "merch");
 
@@ -118,6 +120,7 @@ export default function CartPage() {
         stripeSessionId: "",
         status: "pending",
         shippingAddress,
+        phoneNumber: phoneNumber.trim() || undefined,
       });
 
       // Build Stripe items
@@ -491,6 +494,30 @@ export default function CartPage() {
                         className="mt-1 bg-muted/30 border-white/10"
                       />
                     </div>
+                  </div>
+                  {/* Phone Number */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Phone className="w-4 h-4 text-primary" />
+                      <Label
+                        htmlFor="checkout-phone"
+                        className="text-sm text-muted-foreground"
+                      >
+                        Phone Number{" "}
+                        <span className="text-muted-foreground/60 text-xs">
+                          (for delivery)
+                        </span>
+                      </Label>
+                    </div>
+                    <Input
+                      id="checkout-phone"
+                      data-ocid="cart.input"
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="+91 98765 43210"
+                      className="bg-muted/30 border-white/10"
+                    />
                   </div>
                 </motion.div>
               )}

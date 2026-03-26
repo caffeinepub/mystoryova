@@ -51,6 +51,7 @@ export interface Order {
   status: "pending" | "paid" | "fulfilled" | "cancelled";
   createdAt: string;
   shippingAddress?: ShippingAddress;
+  phoneNumber?: string;
 }
 
 const SEED_MERCH: MerchProduct[] = [
