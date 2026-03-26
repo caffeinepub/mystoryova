@@ -18,6 +18,7 @@ export function useGetAllBooks() {
       return actor.getAllBooks();
     },
     enabled: !!actor && !isFetching,
+    retry: 2,
   });
 }
 

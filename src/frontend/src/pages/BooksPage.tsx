@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LayoutGrid, List, SlidersHorizontal } from "lucide-react";
+import { LayoutGrid, List, RefreshCw, SlidersHorizontal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import BookCard from "../components/BookCard";
 import ScrollReveal from "../components/ScrollReveal";
@@ -19,7 +19,7 @@ export default function BooksPage() {
     title: "Books",
     description: "Explore the complete collection of books by O. Chiddarwar.",
   });
-  const { data: books = [], isLoading } = useGetAllBooks();
+  const { data: books = [], isLoading, isError, refetch } = useGetAllBooks();
   const recordVisit = useRecordPageVisit();
   const [view, setView] = useState<"grid" | "list">("grid");
   const [genreFilter, setGenreFilter] = useState("all");
@@ -32,25 +32,79 @@ export default function BooksPage() {
   }, []);
 
   const genres = useMemo(
-    () => ["all", ...Array.from(new Set(books.flatMap((b) => b.genres)))],
+    () => [
+      "all",
+      ...Array.from(
+        new Set(
+          books.flatMap((b) =>
+            (b.genres ?? []).filter((g) => g && g.trim() !== ""),
+          ),
+        ),
+      ),
+    ],
     [books],
   );
+
   const formats = useMemo(
-    () => ["all", ...Array.from(new Set(books.flatMap((b) => b.formats)))],
+    () => [
+      "all",
+      ...Array.from(
+        new Set(
+          books.flatMap((b) =>
+            (b.formats ?? []).filter((f) => f && f.trim() !== ""),
+          ),
+        ),
+      ),
+    ],
     [books],
   );
 
   const filtered = useMemo(() => {
     let result = [...books];
     if (genreFilter !== "all")
-      result = result.filter((b) => b.genres.includes(genreFilter));
+      result = result.filter((b) => (b.genres ?? []).includes(genreFilter));
     if (formatFilter !== "all")
-      result = result.filter((b) => b.formats.includes(formatFilter));
+      result = result.filter((b) => (b.formats ?? []).includes(formatFilter));
     if (sortBy === "title")
-      result.sort((a, b) => a.title.localeCompare(b.title));
-    else result.sort((a, b) => b.publishedDate.localeCompare(a.publishedDate));
+      result.sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""));
+    else
+      result.sort((a, b) =>
+        (b.publishedDate ?? "").localeCompare(a.publishedDate ?? ""),
+      );
     return result;
   }, [books, genreFilter, formatFilter, sortBy]);
+
+  if (isError) {
+    return (
+      <div
+        data-ocid="books.error_state"
+        className="min-h-screen flex items-center justify-center px-6"
+      >
+        <div className="glass rounded-2xl p-10 text-center space-y-6 max-w-md w-full border border-primary/20">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <RefreshCw className="w-7 h-7 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="font-serif text-2xl text-foreground">
+              Unable to Load Books
+            </h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              We couldn't reach the library right now. Please check your
+              connection and try again.
+            </p>
+          </div>
+          <Button
+            data-ocid="books.primary_button"
+            onClick={() => refetch()}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -117,7 +171,7 @@ export default function BooksPage() {
                 Newest First
               </SelectItem>
               <SelectItem value="title" className="text-xs">
-                Title A–Z
+                Title A-Z
               </SelectItem>
             </SelectContent>
           </Select>

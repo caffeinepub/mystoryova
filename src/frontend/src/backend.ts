@@ -204,7 +204,8 @@ export interface backendInterface {
     updateBook(id: BookId, book: Book): Promise<void>;
     verifyAdminPassword(password: string): Promise<boolean>;
     changeAdminPassword(oldPassword: string, newPassword: string): Promise<boolean>;
-    resetAdminPasswordToDefault(): Promise<void>;
+    generateResetPin(email: string): Promise<[string] | []>;
+    verifyResetPinAndChangePassword(pin: string, newPassword: string): Promise<boolean>;
 }
 import type { UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -721,8 +722,11 @@ export class Backend implements backendInterface {
         const result = await this.actor.changeAdminPassword(arg0, arg1);
         return result;
     }
-    async resetAdminPasswordToDefault(): Promise<void> {
-        await this.actor.resetAdminPasswordToDefault();
+    async generateResetPin(email: string): Promise<[string] | []> {
+        return await this.actor.generateResetPin(email);
+    }
+    async verifyResetPinAndChangePassword(pin: string, newPassword: string): Promise<boolean> {
+        return await this.actor.verifyResetPinAndChangePassword(pin, newPassword);
     }
     async updateBook(arg0: BookId, arg1: Book): Promise<void> {
         if (this.processError) {

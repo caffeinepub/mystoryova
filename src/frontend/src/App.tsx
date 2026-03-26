@@ -45,7 +45,48 @@ function RootLayout() {
   );
 }
 
-const rootRoute = createRootRoute({ component: RootLayout });
+function RootErrorComponent({ error }: { error: Error }) {
+  return (
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6">
+        <div className="glass rounded-2xl p-10 text-center space-y-6 max-w-md w-full border border-primary/20">
+          <div className="space-y-2">
+            <p className="text-xs tracking-[0.3em] text-primary mb-2">
+              MYSTORYOVA
+            </p>
+            <h2 className="font-serif text-2xl text-foreground">
+              Something Went Wrong
+            </h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              {error?.message ||
+                "An unexpected error occurred. Please try again."}
+            </p>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="px-5 py-2 rounded-lg border border-white/20 text-sm text-foreground hover:border-primary/50 hover:text-primary transition-colors"
+            >
+              Go Back
+            </button>
+            <a
+              href="/"
+              className="px-5 py-2 rounded-lg bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors"
+            >
+              Home
+            </a>
+          </div>
+        </div>
+      </div>
+    </ThemeProvider>
+  );
+}
+
+const rootRoute = createRootRoute({
+  component: RootLayout,
+  errorComponent: RootErrorComponent,
+});
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
