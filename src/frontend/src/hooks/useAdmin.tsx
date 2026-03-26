@@ -11,6 +11,7 @@ const SESSION_KEY = "chiddarwar_admin_auth";
 
 interface AdminContextType {
   isAuthenticated: boolean;
+  isActorReady: boolean;
   login: (password: string) => Promise<boolean>;
   logout: () => void;
   changePassword: (
@@ -21,6 +22,7 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType>({
   isAuthenticated: false,
+  isActorReady: false,
   login: async () => false,
   logout: () => {},
   changePassword: async () => false,
@@ -30,7 +32,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(
     () => sessionStorage.getItem(SESSION_KEY) === "true",
   );
-  const { actor } = useActor();
+  const { actor, isFetching } = useActor();
+  const isActorReady = !!actor && !isFetching;
 
   const login = useCallback(
     async (password: string) => {
@@ -69,7 +72,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   return (
     <AdminContext.Provider
-      value={{ isAuthenticated, login, logout, changePassword }}
+      value={{ isAuthenticated, isActorReady, login, logout, changePassword }}
     >
       {children}
     </AdminContext.Provider>

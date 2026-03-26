@@ -9,11 +9,13 @@ import {
   Headphones,
   Mic,
   ShoppingCart,
+  Zap,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import AudioPlayer from "../components/AudioPlayer";
 import StarRating from "../components/StarRating";
+import { RAZORPAY_AUDIOBOOK_LINKS } from "../config/razorpayLinks";
 import { useCart } from "../hooks/useCart";
 import { useMetaTags } from "../hooks/useMetaTags";
 import { useStore } from "../hooks/useStore";
@@ -50,6 +52,8 @@ export default function AudiobookDetailPage() {
   const inCart = items.some(
     (i) => i.productId === ab.id && i.type === "audiobook",
   );
+
+  const razorpayLink = RAZORPAY_AUDIOBOOK_LINKS[ab.title] ?? "#";
 
   const handleBuy = () => {
     if (inCart) return;
@@ -156,6 +160,29 @@ export default function AudiobookDetailPage() {
                   {inCart ? "In Cart" : "Buy Audiobook"}
                 </Button>
               </div>
+
+              {/* Razorpay Buy Now */}
+              <div className="space-y-1.5">
+                <a
+                  href={razorpayLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto block"
+                  data-ocid="store.secondary_button"
+                >
+                  <button
+                    type="button"
+                    className="w-full gap-2 px-6 py-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold shadow-lg shadow-amber-500/25 hover:shadow-amber-400/40 hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <Zap className="w-4 h-4" />
+                    Buy Now — Instant Access
+                  </button>
+                </a>
+                <p className="text-xs text-muted-foreground">
+                  Secure checkout via Razorpay · UPI, Cards, Net Banking
+                </p>
+              </div>
+
               {inCart && (
                 <Link to="/store/cart" data-ocid="store.link">
                   <Button

@@ -2,9 +2,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "@tanstack/react-router";
-import { Headphones, ShoppingBag, ShoppingCart, Star } from "lucide-react";
+import { Headphones, ShoppingBag, ShoppingCart, Star, Zap } from "lucide-react";
 import { motion } from "motion/react";
-import { toast } from "sonner";
+import {
+  RAZORPAY_AUDIOBOOK_LINKS,
+  RAZORPAY_MERCH_LINKS,
+} from "../config/razorpayLinks";
 import { useCart } from "../hooks/useCart";
 import { useMetaTags } from "../hooks/useMetaTags";
 import { useStore } from "../hooks/useStore";
@@ -48,20 +51,7 @@ export default function StorePage() {
     description: "Own the stories you love. Audiobooks and author merchandise.",
   });
   const { merch, audiobooks } = useStore();
-  const { addToCart, cartCount } = useCart();
-
-  const handleAddMerch = (product: (typeof merch)[0]) => {
-    if (!product.inStock) return;
-    addToCart({
-      type: "merch",
-      title: product.title,
-      price: product.price,
-      quantity: 1,
-      imageUrl: product.imageUrl,
-      productId: product.id,
-    });
-    toast.success(`"${product.title}" added to cart`);
-  };
+  const { cartCount } = useCart();
 
   return (
     <div className="min-h-screen">
@@ -147,69 +137,74 @@ export default function StorePage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {audiobooks.map((ab, idx) => (
-                  <motion.div
-                    key={ab.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.07 }}
-                    data-ocid={`store.item.${idx + 1}`}
-                    className="glass rounded-2xl overflow-hidden border border-white/10 hover:border-primary/30 transition-all group"
-                  >
-                    <div className="relative h-56 overflow-hidden">
-                      <AudioCover coverUrl={ab.coverUrl} title={ab.title} />
-                      <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
-                      <Badge className="absolute top-3 left-3 bg-primary/90 text-primary-foreground text-xs">
-                        <Headphones className="w-3 h-3 mr-1" /> Audiobook
-                      </Badge>
-                    </div>
-                    <div className="p-5 space-y-3">
-                      <h3 className="font-serif text-lg font-bold text-foreground group-hover:text-primary transition-colors">
-                        {ab.title}
-                      </h3>
-                      <p className="text-xs text-muted-foreground">
-                        Narrated by {ab.narrator} · {ab.duration}
-                      </p>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {ab.description}
-                      </p>
-                      <div className="flex items-center justify-between pt-1">
-                        <span className="text-primary font-bold text-lg">
-                          ${(ab.price / 100).toFixed(2)}
-                        </span>
-                        <div className="flex gap-2">
-                          {ab.sampleUrl && (
-                            <Link
-                              to="/store/audiobooks/$id"
-                              params={{ id: ab.id }}
-                              data-ocid="store.secondary_button"
-                            >
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-primary/30 text-primary hover:bg-primary/10 text-xs"
+                {audiobooks.map((ab, idx) => {
+                  const razorpayLink =
+                    RAZORPAY_AUDIOBOOK_LINKS[ab.title] ?? "#";
+                  return (
+                    <motion.div
+                      key={ab.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.07 }}
+                      data-ocid={`store.item.${idx + 1}`}
+                      className="glass rounded-2xl overflow-hidden border border-white/10 hover:border-primary/30 transition-all group"
+                    >
+                      <div className="relative h-56 overflow-hidden">
+                        <AudioCover coverUrl={ab.coverUrl} title={ab.title} />
+                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
+                        <Badge className="absolute top-3 left-3 bg-primary/90 text-primary-foreground text-xs">
+                          <Headphones className="w-3 h-3 mr-1" /> Audiobook
+                        </Badge>
+                      </div>
+                      <div className="p-5 space-y-3">
+                        <h3 className="font-serif text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                          {ab.title}
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          Narrated by {ab.narrator} · {ab.duration}
+                        </p>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {ab.description}
+                        </p>
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-primary font-bold text-lg">
+                            ₹{(ab.price / 100).toFixed(2)}
+                          </span>
+                          <div className="flex gap-2">
+                            {ab.sampleUrl && (
+                              <Link
+                                to="/store/audiobooks/$id"
+                                params={{ id: ab.id }}
+                                data-ocid="store.secondary_button"
                               >
-                                Preview
-                              </Button>
-                            </Link>
-                          )}
-                          <Link
-                            to="/store/audiobooks/$id"
-                            params={{ id: ab.id }}
-                            data-ocid="store.primary_button"
-                          >
-                            <Button
-                              size="sm"
-                              className="bg-primary text-primary-foreground hover:brightness-110 text-xs"
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-primary/30 text-primary hover:bg-primary/10 text-xs"
+                                >
+                                  Preview
+                                </Button>
+                              </Link>
+                            )}
+                            <a
+                              href={razorpayLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              data-ocid="store.primary_button"
                             >
-                              Buy Now
-                            </Button>
-                          </Link>
+                              <button
+                                type="button"
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-400 text-black shadow-lg shadow-amber-500/20 hover:shadow-amber-400/30 hover:scale-105 transition-all duration-200"
+                              >
+                                <Zap className="w-3 h-3" /> Buy Now
+                              </button>
+                            </a>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
@@ -226,65 +221,74 @@ export default function StorePage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {merch.map((product, idx) => (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.06 }}
-                    data-ocid={`store.item.${idx + 1}`}
-                    className="glass rounded-2xl overflow-hidden border border-white/10 hover:border-primary/30 transition-all group"
-                  >
-                    <div className="relative h-52 overflow-hidden">
-                      {product.imageUrl ? (
-                        <img
-                          src={product.imageUrl}
-                          alt={product.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <MerchPlaceholder category={product.category} />
-                      )}
-                      {!product.inStock && (
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                          <Badge variant="secondary">Out of Stock</Badge>
-                        </div>
-                      )}
-                      <Badge className="absolute top-3 left-3 bg-black/70 text-foreground text-xs border border-white/10">
-                        {product.category}
-                      </Badge>
-                      {product.featured && (
-                        <Badge className="absolute top-3 right-3 bg-primary/90 text-primary-foreground text-xs">
-                          <Star className="w-3 h-3 mr-1" /> Featured
+                {merch.map((product, idx) => {
+                  const razorpayLink =
+                    RAZORPAY_MERCH_LINKS[product.title] ?? "#";
+                  return (
+                    <motion.div
+                      key={product.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.06 }}
+                      data-ocid={`store.item.${idx + 1}`}
+                      className="glass rounded-2xl overflow-hidden border border-white/10 hover:border-primary/30 transition-all group"
+                    >
+                      <div className="relative h-52 overflow-hidden">
+                        {product.imageUrl ? (
+                          <img
+                            src={product.imageUrl}
+                            alt={product.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <MerchPlaceholder category={product.category} />
+                        )}
+                        {!product.inStock && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                            <Badge variant="secondary">Out of Stock</Badge>
+                          </div>
+                        )}
+                        <Badge className="absolute top-3 left-3 bg-black/70 text-foreground text-xs border border-white/10">
+                          {product.category}
                         </Badge>
-                      )}
-                    </div>
-                    <div className="p-4 space-y-3">
-                      <Link to="/store/merch/$id" params={{ id: product.id }}>
-                        <h3 className="font-serif font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                          {product.title}
-                        </h3>
-                      </Link>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
-                        {product.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-primary font-bold">
-                          ${(product.price / 100).toFixed(2)}
-                        </span>
-                        <Button
-                          size="sm"
-                          data-ocid="store.primary_button"
-                          onClick={() => handleAddMerch(product)}
-                          disabled={!product.inStock}
-                          className="bg-primary text-primary-foreground hover:brightness-110 text-xs gap-1"
-                        >
-                          <ShoppingCart className="w-3 h-3" /> Add to Cart
-                        </Button>
+                        {product.featured && (
+                          <Badge className="absolute top-3 right-3 bg-primary/90 text-primary-foreground text-xs">
+                            <Star className="w-3 h-3 mr-1" /> Featured
+                          </Badge>
+                        )}
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                      <div className="p-4 space-y-3">
+                        <Link to="/store/merch/$id" params={{ id: product.id }}>
+                          <h3 className="font-serif font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                            {product.title}
+                          </h3>
+                        </Link>
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {product.description}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-primary font-bold">
+                            ₹{(product.price / 100).toFixed(2)}
+                          </span>
+                          <a
+                            href={razorpayLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            data-ocid="store.primary_button"
+                          >
+                            <button
+                              type="button"
+                              disabled={!product.inStock}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-400 text-black shadow-lg shadow-amber-500/20 hover:shadow-amber-400/30 hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            >
+                              <Zap className="w-3 h-3" /> Buy Now
+                            </button>
+                          </a>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </TabsContent>

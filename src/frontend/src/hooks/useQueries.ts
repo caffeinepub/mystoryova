@@ -10,16 +10,20 @@ import type {
 import { useActor } from "./useActor";
 
 export function useGetAllBooks() {
-  const { actor, isFetching } = useActor();
-  return useQuery<Book[]>({
+  const { actor, isFetching: actorFetching } = useActor();
+  const query = useQuery<Book[]>({
     queryKey: ["books"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getAllBooks();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
     retry: 2,
   });
+  return {
+    ...query,
+    isLoading: query.isLoading || actorFetching || (!actor && !query.data),
+  };
 }
 
 export function useGetBook(id: string) {

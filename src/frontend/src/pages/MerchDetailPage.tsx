@@ -1,11 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link, useParams } from "@tanstack/react-router";
-import { ArrowLeft, ShoppingCart, Truck } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Truck, Zap } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import StarRating from "../components/StarRating";
+import { RAZORPAY_MERCH_LINKS } from "../config/razorpayLinks";
 import { useCart } from "../hooks/useCart";
 import { useMetaTags } from "../hooks/useMetaTags";
 import { useStore } from "../hooks/useStore";
@@ -66,6 +67,8 @@ export default function MerchDetailPage() {
       i.type === "merch" &&
       (!product.sizes?.length || i.selectedSize === selectedSize),
   );
+
+  const razorpayLink = RAZORPAY_MERCH_LINKS[product.title] ?? "#";
 
   const handleAdd = () => {
     if (product.sizes && product.sizes.length > 0 && !selectedSize) {
@@ -214,6 +217,29 @@ export default function MerchDetailPage() {
                   )}
                 </div>
               )}
+
+              {/* Razorpay Buy Now */}
+              <div className="space-y-1.5">
+                <a
+                  href={razorpayLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto block"
+                  data-ocid="store.secondary_button"
+                >
+                  <button
+                    type="button"
+                    disabled={!product.inStock}
+                    className="w-full gap-2 px-6 py-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold shadow-lg shadow-amber-500/25 hover:shadow-amber-400/40 hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  >
+                    <Zap className="w-4 h-4" />
+                    Buy Now — Fast Checkout
+                  </button>
+                </a>
+                <p className="text-xs text-muted-foreground">
+                  Secure checkout via Razorpay · UPI, Cards, Net Banking
+                </p>
+              </div>
 
               {alreadyInCart && (
                 <Link to="/store/cart" data-ocid="store.link">

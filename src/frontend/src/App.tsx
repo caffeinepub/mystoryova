@@ -32,6 +32,7 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import ReturnPolicyPage from "./pages/ReturnPolicyPage";
 import StorePage from "./pages/StorePage";
 import TermsPage from "./pages/TermsPage";
+import ThankYouPage from "./pages/ThankYouPage";
 
 function RootLayout() {
   useEffect(() => {
@@ -195,6 +196,11 @@ const orderLookupRoute = createRoute({
   path: "/store/orders",
   component: OrderLookupPage,
 });
+const thankYouRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/thank-you",
+  component: ThankYouPage,
+});
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -215,6 +221,7 @@ const routeTree = rootRoute.addChildren([
   orderSuccessRoute,
   myLibraryRoute,
   orderLookupRoute,
+  thankYouRoute,
 ]);
 const router = createRouter({ routeTree });
 

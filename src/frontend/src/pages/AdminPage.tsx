@@ -86,10 +86,11 @@ const EMPTY_POST: Omit<BlogPost, "id"> = {
 type ForgotStep = "email" | "pin";
 
 function LoginForm() {
-  const { login } = useAdmin();
+  const { login, isActorReady } = useAdmin();
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [forgotStep, setForgotStep] = useState<ForgotStep>("email");
   const [recoveryEmail, setRecoveryEmail] = useState("");
@@ -104,18 +105,33 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = await login(password);
-    if (!ok) {
-      setError("Incorrect password.");
-    } else setError("");
+    if (!isActorReady) {
+      setError("Backend is still loading, please try again in a moment.");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const ok = await login(password);
+      if (!ok) {
+        setError("Incorrect password.");
+      } else setError("");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleRequestPin = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotError("");
+    if (!actor) {
+      setForgotError(
+        "Backend is still loading. Please wait a moment and try again.",
+      );
+      return;
+    }
     setForgotLoading(true);
     try {
-      const result = await actor?.generateResetPin(
+      const result = await actor.generateResetPin(
         recoveryEmail.trim().toLowerCase(),
       );
       if (!result) {
@@ -221,9 +237,22 @@ function LoginForm() {
           <Button
             data-ocid="admin.submit_button"
             type="submit"
+            disabled={!isActorReady || isSubmitting}
             className="w-full bg-primary text-primary-foreground hover:brightness-110"
           >
-            Enter Dashboard
+            {!isActorReady ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Connecting...
+              </span>
+            ) : isSubmitting ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Verifying...
+              </span>
+            ) : (
+              "Enter Dashboard"
+            )}
           </Button>
         </form>
 
@@ -1388,8 +1417,16 @@ function ChangePasswordPanel() {
     e.preventDefault();
     setMsg(null);
     setLoading(true);
+    if (!actor) {
+      setMsg({
+        type: "error",
+        text: "Backend is still loading. Please wait a moment and try again.",
+      });
+      setLoading(false);
+      return;
+    }
     try {
-      const result = await actor?.generateResetPin(email.trim().toLowerCase());
+      const result = await actor.generateResetPin(email.trim().toLowerCase());
       if (!result) {
         setMsg({
           type: "error",
