@@ -1355,8 +1355,10 @@ export default function AdminPage() {
 }
 
 function ChangePasswordPanel() {
-  const { changePassword } = useAdmin();
-  const [oldPw, setOldPw] = useState("");
+  const { actor } = useActor();
+  const [step, setStep] = useState<"email" | "pin">("email");
+  const [email, setEmail] = useState("");
+  const [pin, setPin] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
   const [msg, setMsg] = useState<{
@@ -1364,8 +1366,38 @@ function ChangePasswordPanel() {
     text: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [generatedPin, setGeneratedPin] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRequestPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMsg(null);
+    setLoading(true);
+    try {
+      const result = await actor?.generateResetPin(email.trim().toLowerCase());
+      if (!result || result.length === 0) {
+        setMsg({
+          type: "error",
+          text: "That email is not registered for password recovery.",
+        });
+      } else {
+        setGeneratedPin(result[0] as string);
+        setStep("pin");
+        setMsg({
+          type: "success",
+          text: "PIN generated. Enter it below along with your new password.",
+        });
+      }
+    } catch {
+      setMsg({
+        type: "error",
+        text: "Something went wrong. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
     if (newPw.length < 6) {
@@ -1376,94 +1408,181 @@ function ChangePasswordPanel() {
       return;
     }
     if (newPw !== confirmPw) {
-      setMsg({ type: "error", text: "New passwords do not match." });
+      setMsg({ type: "error", text: "Passwords do not match." });
       return;
     }
     setLoading(true);
-    const ok = await changePassword(oldPw, newPw);
-    setLoading(false);
-    if (ok) {
-      setMsg({ type: "success", text: "Password changed successfully." });
-      setOldPw("");
-      setNewPw("");
-      setConfirmPw("");
-    } else {
-      setMsg({ type: "error", text: "Current password is incorrect." });
+    try {
+      const ok = await actor?.verifyResetPinAndChangePassword(
+        pin.trim(),
+        newPw,
+      );
+      if (ok) {
+        setMsg({ type: "success", text: "Password changed successfully." });
+        setStep("email");
+        setEmail("");
+        setPin("");
+        setNewPw("");
+        setConfirmPw("");
+        setGeneratedPin("");
+      } else {
+        setMsg({
+          type: "error",
+          text: "Invalid or expired PIN. Please request a new one.",
+        });
+      }
+    } catch {
+      setMsg({
+        type: "error",
+        text: "Something went wrong. Please try again.",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="max-w-md">
-      <h2 className="font-serif text-xl font-semibold text-foreground mb-6">
+      <h2 className="font-serif text-xl font-semibold text-foreground mb-2">
         Change Password
       </h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label
-            htmlFor="old-pw"
-            className="text-sm text-muted-foreground block mb-1"
+      <p className="text-sm text-muted-foreground mb-6">
+        Password changes require verification via the registered recovery email
+        (mystoryova@gmail.com).
+      </p>
+
+      {step === "email" ? (
+        <form onSubmit={handleRequestPin} className="space-y-4">
+          <div>
+            <label
+              htmlFor="recovery-email-settings"
+              className="text-sm text-muted-foreground block mb-1"
+            >
+              Recovery Email
+            </label>
+            <Input
+              id="recovery-email-settings"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter recovery email"
+              required
+              className="bg-white/5 border-white/10"
+            />
+          </div>
+          {msg && (
+            <p
+              className={`text-sm ${msg.type === "success" ? "text-green-400" : "text-destructive"}`}
+            >
+              {msg.text}
+            </p>
+          )}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="bg-primary text-primary-foreground hover:brightness-110"
           >
-            Current Password
-          </label>
-          <Input
-            id="old-pw"
-            type="password"
-            value={oldPw}
-            onChange={(e) => setOldPw(e.target.value)}
-            placeholder="Enter current password"
-            required
-            className="bg-white/5 border-white/10"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="new-pw"
-            className="text-sm text-muted-foreground block mb-1"
-          >
-            New Password
-          </label>
-          <Input
-            id="new-pw"
-            type="password"
-            value={newPw}
-            onChange={(e) => setNewPw(e.target.value)}
-            placeholder="Enter new password (min 6 chars)"
-            required
-            className="bg-white/5 border-white/10"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="confirm-pw"
-            className="text-sm text-muted-foreground block mb-1"
-          >
-            Confirm New Password
-          </label>
-          <Input
-            id="confirm-pw"
-            type="password"
-            value={confirmPw}
-            onChange={(e) => setConfirmPw(e.target.value)}
-            placeholder="Repeat new password"
-            required
-            className="bg-white/5 border-white/10"
-          />
-        </div>
-        {msg && (
-          <p
-            className={`text-sm ${msg.type === "success" ? "text-green-400" : "text-destructive"}`}
-          >
-            {msg.text}
-          </p>
-        )}
-        <Button
-          type="submit"
-          disabled={loading}
-          className="bg-primary text-primary-foreground hover:brightness-110"
-        >
-          {loading ? "Saving..." : "Update Password"}
-        </Button>
-      </form>
+            {loading ? "Sending..." : "Send Reset PIN"}
+          </Button>
+        </form>
+      ) : (
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          {generatedPin && (
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded p-3 text-sm">
+              <span className="text-yellow-400 font-medium">
+                Your reset PIN:{" "}
+              </span>
+              <span className="font-mono text-lg tracking-widest">
+                {generatedPin}
+              </span>
+              <span className="text-muted-foreground text-xs block mt-1">
+                (Valid for 10 minutes)
+              </span>
+            </div>
+          )}
+          <div>
+            <label
+              htmlFor="settings-pin"
+              className="text-sm text-muted-foreground block mb-1"
+            >
+              Enter PIN
+            </label>
+            <Input
+              id="settings-pin"
+              type="text"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              placeholder="6-digit PIN"
+              required
+              className="bg-white/5 border-white/10"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="settings-new-pw"
+              className="text-sm text-muted-foreground block mb-1"
+            >
+              New Password
+            </label>
+            <Input
+              id="settings-new-pw"
+              type="password"
+              value={newPw}
+              onChange={(e) => setNewPw(e.target.value)}
+              placeholder="Enter new password (min 6 chars)"
+              required
+              className="bg-white/5 border-white/10"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="settings-confirm-pw"
+              className="text-sm text-muted-foreground block mb-1"
+            >
+              Confirm New Password
+            </label>
+            <Input
+              id="settings-confirm-pw"
+              type="password"
+              value={confirmPw}
+              onChange={(e) => setConfirmPw(e.target.value)}
+              placeholder="Repeat new password"
+              required
+              className="bg-white/5 border-white/10"
+            />
+          </div>
+          {msg && (
+            <p
+              className={`text-sm ${msg.type === "success" ? "text-green-400" : "text-destructive"}`}
+            >
+              {msg.text}
+            </p>
+          )}
+          <div className="flex gap-3">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="bg-primary text-primary-foreground hover:brightness-110"
+            >
+              {loading ? "Saving..." : "Update Password"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setStep("email");
+                setMsg(null);
+                setPin("");
+                setNewPw("");
+                setConfirmPw("");
+              }}
+              className="border-white/10"
+            >
+              Back
+            </Button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }
