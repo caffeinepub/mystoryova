@@ -44,12 +44,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         }
         return false;
       } catch {
-        // fallback to default password if backend unavailable
-        if (password === "admin123") {
-          sessionStorage.setItem(SESSION_KEY, "true");
-          setIsAuthenticated(true);
-          return true;
-        }
         return false;
       }
     },

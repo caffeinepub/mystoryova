@@ -27,7 +27,13 @@ export function useGetBook(id: string) {
     queryKey: ["book", id],
     queryFn: async () => {
       if (!actor) return null;
-      return actor.getBook(BigInt(id));
+      let bookBigId: bigint;
+      try {
+        bookBigId = BigInt(id);
+      } catch {
+        return null;
+      }
+      return actor.getBook(bookBigId);
     },
     enabled: !!actor && !isFetching && !!id,
   });
@@ -39,7 +45,13 @@ export function useGetRelatedBooks(bookId: string) {
     queryKey: ["relatedBooks", bookId],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getRelatedBooks(BigInt(bookId));
+      let relBigId: bigint;
+      try {
+        relBigId = BigInt(bookId);
+      } catch {
+        return [];
+      }
+      return actor.getRelatedBooks(relBigId);
     },
     enabled: !!actor && !isFetching && !!bookId,
   });
@@ -51,7 +63,13 @@ export function useGetReviewsForBook(bookId: string) {
     queryKey: ["reviews", bookId],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getReviewsForBook(BigInt(bookId));
+      let revBigId: bigint;
+      try {
+        revBigId = BigInt(bookId);
+      } catch {
+        return [];
+      }
+      return actor.getReviewsForBook(revBigId);
     },
     enabled: !!actor && !isFetching && !!bookId,
   });
@@ -87,7 +105,13 @@ export function useGetBlogPost(id: string) {
     queryKey: ["blogPost", id],
     queryFn: async () => {
       if (!actor) return null;
-      return actor.getBlogPost(BigInt(id));
+      let blogBigId: bigint;
+      try {
+        blogBigId = BigInt(id);
+      } catch {
+        return null;
+      }
+      return actor.getBlogPost(blogBigId);
     },
     enabled: !!actor && !isFetching && !!id,
   });

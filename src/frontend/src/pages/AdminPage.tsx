@@ -39,6 +39,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { BlogPost, Book } from "../backend";
 import { loadConfig } from "../config";
+import { useActor } from "../hooks/useActor";
 import { useAdmin } from "../hooks/useAdmin";
 import { useMetaTags } from "../hooks/useMetaTags";
 import {
@@ -86,6 +87,9 @@ function LoginForm() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [showForgot, setShowForgot] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetDone, setResetDone] = useState(false);
+  const { actor } = useActor();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,6 +182,30 @@ function LoginForm() {
               <strong className="text-foreground">Settings</strong> tab in the
               dashboard.
             </p>
+            {resetDone ? (
+              <p className="text-sm text-green-500 font-medium">
+                Password reset to admin123. You can now log in.
+              </p>
+            ) : (
+              <button
+                type="button"
+                disabled={resetting}
+                onClick={async () => {
+                  setResetting(true);
+                  try {
+                    await actor?.resetAdminPasswordToDefault();
+                    setResetDone(true);
+                  } finally {
+                    setResetting(false);
+                  }
+                }}
+                className="text-sm text-primary underline hover:no-underline disabled:opacity-50"
+              >
+                {resetting
+                  ? "Resetting..."
+                  : "Reset password to default (admin123)"}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -244,6 +272,8 @@ function BookForm({
       });
 
       // Convert data URL to bytes
+      if (!compressedDataUrl.includes(","))
+        throw new Error("Invalid image data URL");
       const base64 = compressedDataUrl.split(",")[1];
       const binary = atob(base64);
       const bytes = new Uint8Array(binary.length);
@@ -660,6 +690,8 @@ export default function AdminPage() {
   const [editingBook, setEditingBook] = useState<Book | undefined>();
   const [postDialogOpen, setPostDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | undefined>();
+  const [deletingBookId, setDeletingBookId] = useState<bigint | null>(null);
+  const [deletingPostId, setDeletingPostId] = useState<bigint | null>(null);
 
   if (!isAuthenticated) return <LoginForm />;
 
@@ -889,15 +921,17 @@ export default function AdminPage() {
                               size="sm"
                               variant="ghost"
                               className="text-destructive hover:bg-destructive/10"
-                              onClick={() =>
+                              onClick={() => {
+                                setDeletingBookId(book.id);
                                 deleteBook.mutate(book.id, {
                                   onSuccess: () =>
                                     toast.success("Book deleted"),
                                   onError: () => toast.error("Failed"),
-                                })
-                              }
+                                  onSettled: () => setDeletingBookId(null),
+                                });
+                              }}
                             >
-                              {deleteBook.isPending ? (
+                              {deletingBookId === book.id ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                               ) : (
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -1005,14 +1039,16 @@ export default function AdminPage() {
                               size="sm"
                               variant="ghost"
                               className="text-destructive hover:bg-destructive/10"
-                              onClick={() =>
+                              onClick={() => {
+                                setDeletingPostId(post.id);
                                 deletePost.mutate(post.id, {
                                   onSuccess: () => toast.success("Deleted"),
                                   onError: () => toast.error("Failed"),
-                                })
-                              }
+                                  onSettled: () => setDeletingPostId(null),
+                                });
+                              }}
                             >
-                              {deletePost.isPending ? (
+                              {deletingPostId === post.id ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                               ) : (
                                 <Trash2 className="w-3.5 h-3.5" />

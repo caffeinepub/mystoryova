@@ -25,9 +25,9 @@ export default function HomePage() {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
   useEffect(() => {
-    if (!localStorage.getItem("seeded")) {
+    if (!localStorage.getItem("seededV2")) {
       seedMutation.mutate(undefined, {
-        onSuccess: () => localStorage.setItem("seeded", "true"),
+        onSuccess: () => localStorage.setItem("seededV2", "true"),
       });
     }
   }, []);

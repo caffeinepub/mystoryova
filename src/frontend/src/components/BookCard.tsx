@@ -54,7 +54,7 @@ export default function BookCard({
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center">
               <span className="text-primary font-serif text-xl font-bold">
-                {book.title[0]}
+                {book.title[0] ?? "?"}
               </span>
             </div>
           )}
@@ -169,7 +169,7 @@ export default function BookCard({
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary/30 to-secondary/50 flex items-center justify-center">
             <span className="text-primary font-serif text-4xl font-bold">
-              {book.title[0]}
+              {book.title[0] ?? "?"}
             </span>
           </div>
         )}

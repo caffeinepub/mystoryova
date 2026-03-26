@@ -161,7 +161,7 @@ export default function BookDetailPage() {
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-primary/30 to-secondary/50 flex items-center justify-center">
                     <span className="font-serif text-5xl font-bold text-primary">
-                      {book.title[0]}
+                      {book.title[0] ?? "?"}
                     </span>
                   </div>
                 )}

@@ -444,6 +444,10 @@ actor {
     };
   };
 
+  public shared func resetAdminPasswordToDefault() : async () {
+    adminPassword := "admin123";
+  };
+
   func countGenreOverlap(book : Book, targetGenres : [Text]) : Nat {
     var count = 0;
     for (genre in targetGenres.values()) {

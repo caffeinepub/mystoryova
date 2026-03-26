@@ -96,6 +96,7 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addChatbotEntry' : ActorMethod<[ChatbotEntry], ChatbotEntryId>,
   'changeAdminPassword' : ActorMethod<[string, string], boolean>,
+  'resetAdminPasswordToDefault' : ActorMethod<[], undefined>,
   'verifyAdminPassword' : ActorMethod<[string], boolean>,
   'addReview' : ActorMethod<[Review], ReviewId>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
