@@ -26,6 +26,7 @@ import ContactPage from "./pages/ContactPage";
 import HomePage from "./pages/HomePage";
 import MerchDetailPage from "./pages/MerchDetailPage";
 import MyLibraryPage from "./pages/MyLibraryPage";
+import OrderLookupPage from "./pages/OrderLookupPage";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import ReturnPolicyPage from "./pages/ReturnPolicyPage";
@@ -189,6 +190,11 @@ const myLibraryRoute = createRoute({
   path: "/store/library",
   component: MyLibraryPage,
 });
+const orderLookupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/store/orders",
+  component: OrderLookupPage,
+});
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -208,6 +214,7 @@ const routeTree = rootRoute.addChildren([
   cartRoute,
   orderSuccessRoute,
   myLibraryRoute,
+  orderLookupRoute,
 ]);
 const router = createRouter({ routeTree });
 

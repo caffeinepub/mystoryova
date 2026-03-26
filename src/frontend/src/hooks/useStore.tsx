@@ -9,6 +9,8 @@ export interface MerchProduct {
   category: string;
   inStock: boolean;
   featured: boolean;
+  sizes?: string[];
+  stockBySize?: Record<string, number>;
 }
 
 export interface AudiobookProduct {
@@ -51,7 +53,6 @@ export interface Order {
   status: "pending" | "paid" | "fulfilled" | "cancelled";
   createdAt: string;
   shippingAddress?: ShippingAddress;
-  phoneNumber?: string;
 }
 
 const SEED_MERCH: MerchProduct[] = [
@@ -65,6 +66,8 @@ const SEED_MERCH: MerchProduct[] = [
     category: "T-Shirt",
     inStock: true,
     featured: true,
+    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
+    stockBySize: { XS: 10, S: 15, M: 20, L: 20, XL: 15, XXL: 10 },
   },
   {
     id: "merch_2",
@@ -76,6 +79,8 @@ const SEED_MERCH: MerchProduct[] = [
     category: "Hoodie",
     inStock: true,
     featured: true,
+    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
+    stockBySize: { XS: 8, S: 12, M: 18, L: 18, XL: 12, XXL: 8 },
   },
   {
     id: "merch_3",

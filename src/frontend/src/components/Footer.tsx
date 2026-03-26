@@ -85,6 +85,13 @@ export default function Footer() {
               >
                 My Library
               </Link>
+              <Link
+                to="/store/orders"
+                data-ocid="footer.link"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Track Order
+              </Link>
             </nav>
           </div>
 

@@ -271,6 +271,16 @@ export default function OrderSuccessPage() {
             for eligibility and timelines.
           </p>
         </div>
+        <p className="text-sm text-center text-muted-foreground mt-2">
+          Need to check your order status?{" "}
+          <Link
+            to="/store/orders"
+            className="text-primary hover:underline"
+            data-ocid="order.link"
+          >
+            Track your order
+          </Link>
+        </p>
       </motion.div>
     </div>
   );

@@ -8,6 +8,7 @@ export interface CartItem {
   quantity: number;
   imageUrl: string;
   productId: string;
+  selectedSize?: string;
 }
 
 interface CartContextValue {
@@ -39,19 +40,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addToCart = (item: Omit<CartItem, "id">) => {
     setItems((prev) => {
       const existing = prev.find(
-        (i) => i.productId === item.productId && i.type === item.type,
+        (i) =>
+          i.productId === item.productId &&
+          i.type === item.type &&
+          i.selectedSize === item.selectedSize,
       );
       if (existing) {
         if (item.type === "audiobook") return prev;
         return prev.map((i) =>
-          i.productId === item.productId && i.type === item.type
+          i.productId === item.productId &&
+          i.type === item.type &&
+          i.selectedSize === item.selectedSize
             ? { ...i, quantity: i.quantity + item.quantity }
             : i,
         );
       }
       return [
         ...prev,
-        { ...item, id: `${item.type}_${item.productId}_${Date.now()}` },
+        {
+          ...item,
+          id: `${item.type}_${item.productId}_${item.selectedSize ?? ""}_${Date.now()}`,
+        },
       ];
     });
   };

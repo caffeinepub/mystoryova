@@ -2,10 +2,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useParams } from "@tanstack/react-router";
-import { ArrowLeft, Clock, Headphones, Mic, ShoppingCart } from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpen,
+  Clock,
+  Headphones,
+  Mic,
+  ShoppingCart,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import AudioPlayer from "../components/AudioPlayer";
+import StarRating from "../components/StarRating";
 import { useCart } from "../hooks/useCart";
 import { useMetaTags } from "../hooks/useMetaTags";
 import { useStore } from "../hooks/useStore";
@@ -55,6 +63,9 @@ export default function AudiobookDetailPage() {
     });
     toast.success(`"${ab.title}" added to cart`);
   };
+
+  // Other audiobooks for the "More Audiobooks" section
+  const others = audiobooks.filter((a) => a.id !== ab.id).slice(0, 3);
 
   return (
     <div className="min-h-screen">
@@ -108,9 +119,18 @@ export default function AudiobookDetailPage() {
               <Badge className="bg-primary/20 text-primary border-primary/30">
                 <Headphones className="w-3 h-3 mr-1" /> Audiobook
               </Badge>
+
               <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground">
                 {ab.title}
               </h1>
+
+              <StarRating
+                productId={ab.id}
+                productType="audiobook"
+                interactive
+                size="sm"
+              />
+
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <Mic className="w-4 h-4 text-primary" /> {ab.narrator}
@@ -124,7 +144,7 @@ export default function AudiobookDetailPage() {
               </p>
               <div className="flex items-center gap-4 pt-2">
                 <span className="font-serif text-3xl font-bold text-primary">
-                  ${(ab.price / 100).toFixed(2)}
+                  ₹{(ab.price / 100).toFixed(2)}
                 </span>
                 <Button
                   data-ocid="store.primary_button"
@@ -146,6 +166,29 @@ export default function AudiobookDetailPage() {
                   </Button>
                 </Link>
               )}
+
+              {/* Bundle callout */}
+              <div className="glass rounded-xl p-4 border-l-4 border-primary bg-primary/5">
+                <div className="flex items-start gap-3">
+                  <BookOpen className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm text-foreground font-medium">
+                      📚 Also available as a book
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Browse our full book collection.{" "}
+                      <Link
+                        to="/books"
+                        className="text-primary hover:underline"
+                        data-ocid="store.link"
+                      >
+                        View Books →
+                      </Link>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <p className="text-xs text-muted-foreground">
                 Already purchased?{" "}
                 <Link
@@ -165,8 +208,66 @@ export default function AudiobookDetailPage() {
         <h2 className="font-serif text-xl font-bold text-foreground mb-5">
           Listen to a Sample
         </h2>
-        <AudioPlayer src={ab.sampleUrl} title={`Sample — ${ab.title}`} />
+        <AudioPlayer
+          src={ab.sampleUrl}
+          title={`Sample — ${ab.title}`}
+          audiobookId={ab.id}
+        />
       </div>
+
+      {/* More audiobooks */}
+      {others.length > 0 && (
+        <div className="max-w-5xl mx-auto px-6 pb-16">
+          <h2 className="font-serif text-xl font-bold text-foreground mb-6">
+            More Audiobooks
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {others.map((other, i) => (
+              <motion.div
+                key={other.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="glass rounded-2xl overflow-hidden border border-white/10 flex flex-col"
+              >
+                <div className="aspect-[3/4] bg-gradient-to-br from-primary/20 to-secondary/60 flex items-center justify-center">
+                  {other.coverUrl ? (
+                    <img
+                      src={other.coverUrl}
+                      alt={other.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Headphones className="w-10 h-10 text-primary/50" />
+                  )}
+                </div>
+                <div className="p-4 flex-1 flex flex-col gap-2">
+                  <p className="font-medium text-foreground text-sm line-clamp-2">
+                    {other.title}
+                  </p>
+                  <p className="text-primary font-bold text-sm">
+                    ₹{(other.price / 100).toFixed(2)}
+                  </p>
+                  <Link
+                    to="/store/audiobooks/$id"
+                    params={{ id: other.id }}
+                    data-ocid="store.link"
+                    className="mt-auto"
+                  >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-primary/30 text-primary hover:bg-primary/10"
+                    >
+                      Listen
+                    </Button>
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

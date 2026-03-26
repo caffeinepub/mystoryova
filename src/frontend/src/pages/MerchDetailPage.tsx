@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Link, useParams } from "@tanstack/react-router";
 import { ArrowLeft, ShoppingCart, Truck } from "lucide-react";
 import { motion } from "motion/react";
+import { useState } from "react";
 import { toast } from "sonner";
+import StarRating from "../components/StarRating";
 import { useCart } from "../hooks/useCart";
 import { useMetaTags } from "../hooks/useMetaTags";
 import { useStore } from "../hooks/useStore";
@@ -33,6 +35,7 @@ export default function MerchDetailPage() {
   const { id } = useParams({ from: "/store/merch/$id" });
   const { merch } = useStore();
   const { addToCart, items } = useCart();
+  const [selectedSize, setSelectedSize] = useState("");
 
   const product = merch.find((m) => m.id === id) ?? null;
 
@@ -58,10 +61,17 @@ export default function MerchDetailPage() {
   }
 
   const alreadyInCart = items.some(
-    (i) => i.productId === product.id && i.type === "merch",
+    (i) =>
+      i.productId === product.id &&
+      i.type === "merch" &&
+      (!product.sizes?.length || i.selectedSize === selectedSize),
   );
 
   const handleAdd = () => {
+    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+      toast.error("Please select a size");
+      return;
+    }
     addToCart({
       type: "merch",
       title: product.title,
@@ -69,9 +79,20 @@ export default function MerchDetailPage() {
       quantity: 1,
       imageUrl: product.imageUrl,
       productId: product.id,
+      selectedSize: selectedSize || undefined,
     });
     toast.success(`"${product.title}" added to cart`);
   };
+
+  // Related products: prefer same category, exclude current
+  const related = [
+    ...merch.filter(
+      (m) => m.id !== product.id && m.category === product.category,
+    ),
+    ...merch.filter(
+      (m) => m.id !== product.id && m.category !== product.category,
+    ),
+  ].slice(0, 3);
 
   return (
     <div className="min-h-screen">
@@ -126,15 +147,25 @@ export default function MerchDetailPage() {
                   <Badge variant="destructive">Out of Stock</Badge>
                 )}
               </div>
+
               <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground">
                 {product.title}
               </h1>
+
+              <StarRating
+                productId={product.id}
+                productType="merch"
+                interactive
+                size="sm"
+              />
+
               <p className="text-foreground leading-relaxed">
                 {product.description}
               </p>
+
               <div className="flex items-center gap-4 pt-2">
                 <span className="font-serif text-3xl font-bold text-primary">
-                  ${(product.price / 100).toFixed(2)}
+                  ₹{(product.price / 100).toFixed(2)}
                 </span>
                 <Button
                   data-ocid="store.primary_button"
@@ -146,6 +177,44 @@ export default function MerchDetailPage() {
                   {product.inStock ? "Add to Cart" : "Out of Stock"}
                 </Button>
               </div>
+
+              {/* Size selector */}
+              {product.sizes && product.sizes.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground">
+                    Select Size
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {product.sizes.map((size) => {
+                      const outOfStock = product.stockBySize?.[size] === 0;
+                      const isSelected = selectedSize === size;
+                      return (
+                        <button
+                          key={size}
+                          type="button"
+                          disabled={outOfStock}
+                          onClick={() => !outOfStock && setSelectedSize(size)}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                            outOfStock
+                              ? "border-white/10 text-muted-foreground/40 line-through cursor-not-allowed"
+                              : isSelected
+                                ? "border-primary bg-primary/20 text-primary"
+                                : "border-white/20 text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {product.sizes.length > 0 && !selectedSize && (
+                    <p className="text-xs text-muted-foreground">
+                      Please select a size to continue
+                    </p>
+                  )}
+                </div>
+              )}
+
               {alreadyInCart && (
                 <Link to="/store/cart" data-ocid="store.link">
                   <Button
@@ -176,6 +245,66 @@ export default function MerchDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Related products */}
+      {related.length > 0 && (
+        <div className="max-w-5xl mx-auto px-6 py-12">
+          <h2 className="font-serif text-xl font-bold text-foreground mb-6">
+            You May Also Like
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {related.map((item, i) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="glass rounded-2xl overflow-hidden border border-white/10 flex flex-col"
+              >
+                <div className="aspect-square bg-muted/20">
+                  {item.imageUrl ? (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className={`w-full h-full bg-gradient-to-br ${
+                        MERCH_GRADIENTS[item.category] ?? MERCH_GRADIENTS.Other
+                      } flex items-center justify-center`}
+                    >
+                      <ShoppingCart className="w-8 h-8 text-primary/40" />
+                    </div>
+                  )}
+                </div>
+                <div className="p-4 flex-1 flex flex-col gap-2">
+                  <p className="font-medium text-foreground text-sm line-clamp-2">
+                    {item.title}
+                  </p>
+                  <p className="text-primary font-bold text-sm">
+                    ₹{(item.price / 100).toFixed(2)}
+                  </p>
+                  <Link
+                    to="/store/merch/$id"
+                    params={{ id: item.id }}
+                    data-ocid="store.link"
+                    className="mt-auto"
+                  >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-primary/30 text-primary hover:bg-primary/10"
+                    >
+                      View
+                    </Button>
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

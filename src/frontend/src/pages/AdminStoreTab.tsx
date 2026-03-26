@@ -57,7 +57,12 @@ const EMPTY_MERCH: Omit<MerchProduct, "id"> = {
   category: "T-Shirt",
   inStock: true,
   featured: false,
+  sizes: [],
+  stockBySize: {},
 };
+
+const SIZED_CATEGORIES = ["T-Shirt", "Hoodie"];
+const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
 const EMPTY_AUDIO: Omit<AudiobookProduct, "id"> = {
   bookId: "0",
@@ -265,6 +270,40 @@ function MerchForm({
         />
         <Label>Featured</Label>
       </div>
+      {SIZED_CATEGORIES.includes(form.category) && (
+        <div className="space-y-3 border-t border-white/10 pt-3">
+          <Label className="text-sm font-medium">Stock by Size</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {ALL_SIZES.map((size) => (
+              <div key={size}>
+                <Label
+                  htmlFor={`size-stock-${size}`}
+                  className="text-xs text-muted-foreground block mb-1"
+                >
+                  {size}
+                </Label>
+                <Input
+                  id={`size-stock-${size}`}
+                  type="number"
+                  min={0}
+                  data-ocid="admin.input"
+                  value={form.stockBySize?.[size] ?? 0}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      stockBySize: {
+                        ...(p.stockBySize ?? {}),
+                        [size]: Number(e.target.value),
+                      },
+                    }))
+                  }
+                  className="bg-muted/30 border-white/10 text-xs h-8"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="flex gap-3 pt-2">
         <Button
           data-ocid="admin.save_button"
