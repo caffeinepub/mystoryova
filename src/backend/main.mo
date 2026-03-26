@@ -248,6 +248,7 @@ actor {
   stable var nextOrderId = 1;
   stable var nextPurchaseId = 1;
   stable var adminPassword = "admin123";
+  stable var adminPasswordResetVersion = 0;
   stable var resetPin : Text = "";
   stable var resetPinExpiry : Int = 0;
   stable var realBooksSeedVersion = 0;
@@ -385,6 +386,8 @@ actor {
 
   // Also seed on fresh install (postupgrade not called on first deploy)
   seedRealBooksIfNeeded();
+  // Force-reset admin password to "admin123" on this deployment (runs once)
+  if (adminPasswordResetVersion < 1) { adminPassword := "admin123"; adminPasswordResetVersion := 1; };
 
   // ============================================================
   // BOOKS API

@@ -37,18 +37,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (password: string) => {
-      try {
-        if (!actor) throw new Error("No actor");
-        const ok = await actor.verifyAdminPassword(password);
-        if (ok) {
-          sessionStorage.setItem(SESSION_KEY, "true");
-          setIsAuthenticated(true);
-          return true;
-        }
-        return false;
-      } catch {
-        return false;
+      if (!actor) throw new Error("Backend is still connecting. Please wait.");
+      const ok = await actor.verifyAdminPassword(password.trim());
+      if (ok) {
+        sessionStorage.setItem(SESSION_KEY, "true");
+        setIsAuthenticated(true);
+        return true;
       }
+      return false;
     },
     [actor],
   );

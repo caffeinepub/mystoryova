@@ -35,7 +35,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { BlogPost, Book } from "../backend";
 import { loadConfig } from "../config";
@@ -103,18 +103,39 @@ function LoginForm() {
   const [resetDone, setResetDone] = useState(false);
   const { actor } = useActor();
 
+  const [actorTimeout, setActorTimeout] = useState(false);
+
+  useEffect(() => {
+    if (isActorReady) {
+      setActorTimeout(false);
+      return;
+    }
+    const t = setTimeout(() => setActorTimeout(true), 10000);
+    return () => clearTimeout(t);
+  }, [isActorReady]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isActorReady) {
-      setError("Backend is still loading, please try again in a moment.");
+      setError(
+        "Backend is still connecting. Please wait a moment and try again.",
+      );
       return;
     }
     setIsSubmitting(true);
+    setError("");
     try {
       const ok = await login(password);
       if (!ok) {
-        setError("Incorrect password.");
-      } else setError("");
+        setError(
+          "Incorrect password. If you forgot it, use 'Forgot password?' below.",
+        );
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(
+        `Connection error: ${msg}. Please refresh the page and try again.`,
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -226,6 +247,10 @@ function LoginForm() {
               </button>
             </div>
           </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Default password after each deployment:{" "}
+            <span className="font-mono text-primary">admin123</span>
+          </p>
           {error && (
             <p
               data-ocid="admin.error_state"
@@ -254,6 +279,11 @@ function LoginForm() {
               "Enter Dashboard"
             )}
           </Button>
+          {actorTimeout && !isActorReady && (
+            <p className="text-destructive text-xs mt-2">
+              Could not connect to backend. Please refresh the page.
+            </p>
+          )}
         </form>
 
         <div className="mt-4 text-center">
@@ -284,7 +314,8 @@ function LoginForm() {
             ) : forgotStep === "email" ? (
               <form onSubmit={handleRequestPin} className="space-y-3">
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Enter the registered recovery email to receive a reset PIN.
+                  Enter the registered recovery email. A PIN will be displayed
+                  on screen — no email needed.
                 </p>
                 <div>
                   <Label htmlFor="recovery-email" className="text-xs">
