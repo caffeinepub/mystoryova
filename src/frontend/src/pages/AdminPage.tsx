@@ -118,10 +118,10 @@ function LoginForm() {
       const result = await actor?.generateResetPin(
         recoveryEmail.trim().toLowerCase(),
       );
-      if (!result || result.length === 0) {
+      if (!result) {
         setForgotError("That email is not registered for password recovery.");
       } else {
-        setGeneratedPin(result[0] as string);
+        setGeneratedPin(result as string);
         setForgotStep("pin");
       }
     } catch {
@@ -1390,13 +1390,13 @@ function ChangePasswordPanel() {
     setLoading(true);
     try {
       const result = await actor?.generateResetPin(email.trim().toLowerCase());
-      if (!result || result.length === 0) {
+      if (!result) {
         setMsg({
           type: "error",
           text: "That email is not registered for password recovery.",
         });
       } else {
-        setGeneratedPin(result[0] as string);
+        setGeneratedPin(result as string);
         setStep("pin");
         setMsg({
           type: "success",

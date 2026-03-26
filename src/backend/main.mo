@@ -40,7 +40,7 @@ actor {
   };
 
   // ============================================================
-  // EXISTING TYPES
+  // TYPES
   // ============================================================
 
   type BookId = Nat;
@@ -124,20 +124,17 @@ actor {
     answer : Text;
   };
 
-  // ============================================================
-  // E-COMMERCE TYPES
-  // ============================================================
-
+  // E-Commerce types (kept for stable variable compatibility)
   type ProductId = Nat;
 
   type MerchandiseProduct = {
     id : ProductId;
     title : Text;
     description : Text;
-    price : Nat; // in cents (USD)
+    price : Nat;
     imageUrl : Text;
     category : Text;
-    printfulProductId : Text; // empty string if not linked
+    printfulProductId : Text;
     inStock : Bool;
     featured : Bool;
   };
@@ -146,18 +143,17 @@ actor {
 
   type AudioBook = {
     id : AudioBookId;
-    bookId : Nat; // 0 if standalone
+    bookId : Nat;
     title : Text;
     description : Text;
-    price : Nat; // in cents (USD)
-    sampleUrl : Text; // free preview URL
-    fullAudioUrl : Text; // only returned to verified purchasers
+    price : Nat;
+    sampleUrl : Text;
+    fullAudioUrl : Text;
     duration : Text;
     coverUrl : Text;
     narrator : Text;
   };
 
-  // Safe AudioBook without fullAudioUrl for public consumption
   type AudioBookPublic = {
     id : AudioBookId;
     bookId : Nat;
@@ -174,7 +170,7 @@ actor {
 
   type OrderItem = {
     productId : Nat;
-    productType : Text; // "merch" or "audiobook"
+    productType : Text;
     quantity : Nat;
     price : Nat;
     title : Text;
@@ -187,9 +183,9 @@ actor {
     items : [OrderItem];
     totalAmount : Nat;
     stripeSessionId : Text;
-    status : Text; // "pending" | "paid" | "fulfilled" | "cancelled"
+    status : Text;
     createdAt : Text;
-    printfulOrderId : Text; // empty if not applicable
+    printfulOrderId : Text;
   };
 
   type PurchaseId = Nat;
@@ -227,7 +223,7 @@ actor {
   };
 
   func compareOrders(o1 : Order, o2 : Order) : Order.Order {
-    Text.compare(o2.createdAt, o1.createdAt); // newest first
+    Text.compare(o2.createdAt, o1.createdAt);
   };
 
   func countGenreOverlap(book : Book, targetGenres : [Text]) : Nat {
@@ -239,7 +235,7 @@ actor {
   };
 
   // ============================================================
-  // STABLE COUNTERS
+  // STABLE COUNTERS AND CONFIG
   // ============================================================
 
   stable var nextBookId = 1;
@@ -257,12 +253,36 @@ actor {
   stable var realBooksSeedVersion = 0;
   stable var stripeSecretKey : Text = "";
   stable var stripeAllowedCountries : [Text] = ["US", "GB", "IN", "AU", "CA"];
+  stable var printfulApiKey : Text = "";
 
   // ============================================================
-  // STABLE MAPS
+  // STABLE BACKING ARRAYS (persist heap maps across upgrades)
   // ============================================================
 
-  let books = Map.empty<BookId, BookV1>(); // V1 kept for compat
+  stable var stableBooks : [(BookId, Book)] = [];
+  stable var stableReviews : [(ReviewId, Review)] = [];
+  stable var stableBlogPosts : [(BlogPostId, BlogPost)] = [];
+  stable var stableSubscribers : [(Text, Subscriber)] = [];
+  stable var stableContacts : [(ContactId, ContactSubmission)] = [];
+  stable var stablePageVisits : [(Text, Nat)] = [];
+  stable var stableChatbotKnowledge : [(ChatbotId, ChatbotEntry)] = [];
+
+  // ============================================================
+  // LEGACY STABLE MAPS (kept for upgrade compatibility only)
+  // ============================================================
+
+  // These were stable maps in the previous version — must be preserved
+  // so Motoko can migrate them. They are no longer actively used.
+  let books = Map.empty<BookId, BookV1>();
+  let merchandiseProducts = Map.empty<ProductId, MerchandiseProduct>();
+  let audioBooks = Map.empty<AudioBookId, AudioBook>();
+  let orders = Map.empty<OrderId, Order>();
+  let purchasedAudioBooks = Map.empty<PurchaseId, PurchasedAudioBook>();
+
+  // ============================================================
+  // ACTIVE HEAP MAPS (loaded from stable arrays on upgrade)
+  // ============================================================
+
   let booksV2 = Map.empty<BookId, Book>();
   let reviews = Map.empty<ReviewId, Review>();
   let blogPosts = Map.empty<BlogPostId, BlogPost>();
@@ -270,10 +290,6 @@ actor {
   let contacts = Map.empty<ContactId, ContactSubmission>();
   let pageVisits = Map.empty<Text, Nat>();
   let chatbotKnowledge = Map.empty<ChatbotId, ChatbotEntry>();
-  let merchandiseProducts = Map.empty<ProductId, MerchandiseProduct>();
-  let audioBooks = Map.empty<AudioBookId, AudioBook>();
-  let orders = Map.empty<OrderId, Order>();
-  let purchasedAudioBooks = Map.empty<PurchaseId, PurchasedAudioBook>();
 
   // ============================================================
   // BOOK SEEDING
@@ -327,7 +343,24 @@ actor {
     realBooksSeedVersion := 1;
   };
 
+  // ============================================================
+  // LIFECYCLE HOOKS
+  // ============================================================
+
+  // Save active heap maps to stable arrays before upgrade
+  system func preupgrade() {
+    stableBooks := booksV2.entries().toArray();
+    stableReviews := reviews.entries().toArray();
+    stableBlogPosts := blogPosts.entries().toArray();
+    stableSubscribers := subscribers.entries().toArray();
+    stableContacts := contacts.entries().toArray();
+    stablePageVisits := pageVisits.entries().toArray();
+    stableChatbotKnowledge := chatbotKnowledge.entries().toArray();
+  };
+
+  // Restore active heap maps from stable arrays, then seed books
   system func postupgrade() {
+    // Migrate any V1 books from legacy map
     for ((id, b) in books.entries()) {
       if (not booksV2.containsKey(id)) {
         booksV2.add(id, {
@@ -339,8 +372,19 @@ actor {
         if (b.id >= nextBookId) { nextBookId := b.id + 1 };
       };
     };
+    // Restore from stable arrays (overrides legacy migration if same id)
+    for ((id, b) in stableBooks.values()) { booksV2.add(id, b) };
+    for ((id, r) in stableReviews.values()) { reviews.add(id, r) };
+    for ((id, p) in stableBlogPosts.values()) { blogPosts.add(id, p) };
+    for ((email, s) in stableSubscribers.values()) { subscribers.add(email, s) };
+    for ((id, c) in stableContacts.values()) { contacts.add(id, c) };
+    for ((page, n) in stablePageVisits.values()) { pageVisits.add(page, n) };
+    for ((id, e) in stableChatbotKnowledge.values()) { chatbotKnowledge.add(id, e) };
     seedRealBooksIfNeeded();
   };
+
+  // Also seed on fresh install (postupgrade not called on first deploy)
+  seedRealBooksIfNeeded();
 
   // ============================================================
   // BOOKS API
@@ -546,79 +590,8 @@ actor {
   };
 
   // ============================================================
-  // MERCHANDISE API
+  // LEGACY STORE READ-ONLY API (data lives in localStorage on frontend)
   // ============================================================
-
-  public shared func createMerchandiseProduct(product : MerchandiseProduct) : async ProductId {
-    let p : MerchandiseProduct = { product with id = nextProductId };
-    merchandiseProducts.add(nextProductId, p);
-    nextProductId += 1;
-    p.id;
-  };
-
-  public shared func updateMerchandiseProduct(id : ProductId, product : MerchandiseProduct) : async () {
-    if (not merchandiseProducts.containsKey(id)) { Runtime.trap("Product not found") };
-    merchandiseProducts.add(id, { product with id });
-  };
-
-  public shared func deleteMerchandiseProduct(id : ProductId) : async () {
-    if (not merchandiseProducts.containsKey(id)) { Runtime.trap("Product not found") };
-    merchandiseProducts.remove(id);
-  };
-
-  public query func getMerchandiseProduct(id : ProductId) : async MerchandiseProduct {
-    switch (merchandiseProducts.get(id)) {
-      case (null) { Runtime.trap("Product not found") };
-      case (?p) { p };
-    };
-  };
-
-  public query func getAllMerchandiseProducts() : async [MerchandiseProduct] {
-    merchandiseProducts.values().toArray();
-  };
-
-  public query func getFeaturedMerchandiseProducts() : async [MerchandiseProduct] {
-    merchandiseProducts.values().toArray().filter(func(p) { p.featured and p.inStock });
-  };
-
-  // ============================================================
-  // AUDIOBOOK API
-  // ============================================================
-
-  public shared func createAudioBook(ab : AudioBook) : async AudioBookId {
-    let a : AudioBook = { ab with id = nextAudioBookId };
-    audioBooks.add(nextAudioBookId, a);
-    nextAudioBookId += 1;
-    a.id;
-  };
-
-  public shared func updateAudioBook(id : AudioBookId, ab : AudioBook) : async () {
-    if (not audioBooks.containsKey(id)) { Runtime.trap("AudioBook not found") };
-    audioBooks.add(id, { ab with id });
-  };
-
-  public shared func deleteAudioBook(id : AudioBookId) : async () {
-    if (not audioBooks.containsKey(id)) { Runtime.trap("AudioBook not found") };
-    audioBooks.remove(id);
-  };
-
-  // Returns public version (no fullAudioUrl)
-  public query func getAudioBook(id : AudioBookId) : async AudioBookPublic {
-    switch (audioBooks.get(id)) {
-      case (null) { Runtime.trap("AudioBook not found") };
-      case (?a) { toPublicAudioBook(a) };
-    };
-  };
-
-  public query func getAllAudioBooks() : async [AudioBookPublic] {
-    audioBooks.values().toArray().map(toPublicAudioBook);
-  };
-
-  // Returns public audiobook linked to a specific book
-  public query func getAudioBookByBookId(bookId : Nat) : async ?AudioBookPublic {
-    let found = audioBooks.values().toArray().filter(func(a) { a.bookId == bookId });
-    if (found.size() == 0) { null } else { ?toPublicAudioBook(found[0]) };
-  };
 
   func toPublicAudioBook(a : AudioBook) : AudioBookPublic {
     {
@@ -628,37 +601,12 @@ actor {
     };
   };
 
-  // Admin only: get full audiobook with URL (for management)
-  public query func getAudioBookAdmin(id : AudioBookId) : async AudioBook {
-    switch (audioBooks.get(id)) {
-      case (null) { Runtime.trap("AudioBook not found") };
-      case (?a) { a };
-    };
+  public query func getAllMerchandiseProducts() : async [MerchandiseProduct] {
+    merchandiseProducts.values().toArray();
   };
 
-  // ============================================================
-  // ORDER API
-  // ============================================================
-
-  public shared func createOrder(order : Order) : async OrderId {
-    let o : Order = { order with id = nextOrderId; status = "pending"; createdAt = Time.now().toText() };
-    orders.add(nextOrderId, o);
-    nextOrderId += 1;
-    o.id;
-  };
-
-  public shared func updateOrderStatus(id : OrderId, status : Text, printfulOrderId : Text) : async () {
-    switch (orders.get(id)) {
-      case (null) { Runtime.trap("Order not found") };
-      case (?o) { orders.add(id, { o with status; printfulOrderId }) };
-    };
-  };
-
-  public query func getOrder(id : OrderId) : async Order {
-    switch (orders.get(id)) {
-      case (null) { Runtime.trap("Order not found") };
-      case (?o) { o };
-    };
+  public query func getAllAudioBooks() : async [AudioBookPublic] {
+    audioBooks.values().toArray().map(toPublicAudioBook);
   };
 
   public query func getAllOrders() : async [Order] {
@@ -667,77 +615,6 @@ actor {
 
   public query func getOrdersByEmail(email : Text) : async [Order] {
     orders.values().toArray().filter(func(o) { o.customerEmail == email }).sort(compareOrders);
-  };
-
-  // Called after Stripe session confirmed paid — marks order paid and grants audiobook access
-  public shared func confirmOrderPayment(orderId : OrderId, stripeSessionId : Text) : async Bool {
-    switch (orders.get(orderId)) {
-      case (null) { false };
-      case (?o) {
-        if (o.stripeSessionId != stripeSessionId) { return false };
-        orders.add(orderId, { o with status = "paid" });
-        // Grant access to any audiobook items
-        for (item in o.items.values()) {
-          if (item.productType == "audiobook") {
-            let token = generateAccessToken(orderId, item.productId);
-            let purchase : PurchasedAudioBook = {
-              id = nextPurchaseId;
-              orderId;
-              customerEmail = o.customerEmail;
-              audiobookId = item.productId;
-              accessToken = token;
-              createdAt = Time.now().toText();
-            };
-            purchasedAudioBooks.add(nextPurchaseId, purchase);
-            nextPurchaseId += 1;
-          };
-        };
-        true;
-      };
-    };
-  };
-
-  func generateAccessToken(orderId : OrderId, audiobookId : Nat) : Text {
-    let t = Int.abs(Time.now());
-    "tok_" # orderId.toText() # "_" # audiobookId.toText() # "_" # (t % 999_999_999).toText();
-  };
-
-  // ============================================================
-  // AUDIOBOOK ACCESS API
-  // ============================================================
-
-  // Verify access and return the full audio URL
-  public query func verifyAudiobookAccess(token : Text, audiobookId : AudioBookId) : async ?Text {
-    let found = purchasedAudioBooks.values().toArray().filter(func(p) {
-      p.accessToken == token and p.audiobookId == audiobookId
-    });
-    if (found.size() == 0) { return null };
-    switch (audioBooks.get(audiobookId)) {
-      case (null) { null };
-      case (?a) { ?a.fullAudioUrl };
-    };
-  };
-
-  // Get all purchased audiobooks for an email (public info only)
-  public query func getPurchasedAudiobooks(email : Text) : async [AudioBookPublic] {
-    let purchases = purchasedAudioBooks.values().toArray().filter(func(p) {
-      p.customerEmail == email
-    });
-    let result = purchases.filterMap(func(p) : ?AudioBookPublic {
-      switch (audioBooks.get(p.audiobookId)) {
-        case (null) { null };
-        case (?a) { ?toPublicAudioBook(a) };
-      };
-    });
-    result;
-  };
-
-  // Get access token for an email + audiobook combination (for re-accessing)
-  public query func getAudiobookAccessToken(email : Text, audiobookId : AudioBookId) : async ?Text {
-    let found = purchasedAudioBooks.values().toArray().filter(func(p) {
-      p.customerEmail == email and p.audiobookId == audiobookId
-    });
-    if (found.size() == 0) { null } else { ?found[0].accessToken };
   };
 
   // ============================================================
@@ -775,55 +652,15 @@ actor {
   };
 
   // ============================================================
-  // PRINTFUL HTTP OUTCALL
+  // PRINTFUL / HTTP OUTCALL
   // ============================================================
-
-  stable var printfulApiKey : Text = "";
 
   public shared func setPrintfulApiKey(key : Text) : async () {
     printfulApiKey := key;
   };
 
-  public func fulfillPrintfulOrder(orderId : OrderId) : async Text {
-    if (printfulApiKey == "") { Runtime.trap("Printful API key not configured") };
-    switch (orders.get(orderId)) {
-      case (null) { Runtime.trap("Order not found") };
-      case (?o) {
-        let body = buildPrintfulOrderBody(o);
-        let headers = [
-          { name = "Authorization"; value = "Bearer " # printfulApiKey },
-          { name = "Content-Type"; value = "application/json" },
-        ];
-        let result = await OutCall.httpPostRequest(
-          "https://api.printful.com/orders",
-          headers,
-          body,
-          transform,
-        );
-        orders.add(orderId, { o with status = "fulfilled"; printfulOrderId = result });
-        result;
-      };
-    };
-  };
-
-  func buildPrintfulOrderBody(o : Order) : Text {
-    var itemsJson = "";
-    var first = true;
-    for (item in o.items.values()) {
-      if (item.productType == "merch") {
-        if (not first) { itemsJson #= "," };
-        itemsJson #= "{\"sync_variant_id\":" # item.productId.toText() #
-          ",\"quantity\":" # item.quantity.toText() # "}";
-        first := false;
-      };
-    };
-    "{\"recipient\":{\"name\":\"" # o.customerName #
-      "\",\"email\":\"" # o.customerEmail #
-      "\"},\"items\":[" # itemsJson # "]}";
-  };
-
   // ============================================================
-  // LEGACY / SEED
+  // SEED
   // ============================================================
 
   public shared func seedInitialData() : async () {

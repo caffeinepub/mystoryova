@@ -11,7 +11,9 @@ import {
   Plus,
   ShoppingBag,
   ShoppingCart,
+  Tag,
   Trash2,
+  X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
@@ -24,7 +26,7 @@ import { useStore } from "../hooks/useStore";
 export default function CartPage() {
   useMetaTags({ title: "Cart — Mystoryova Store" });
   const { items, removeFromCart, updateQuantity, cartTotal } = useCart();
-  const { addOrder } = useStore();
+  const { addOrder, applyCoupon, incrementCouponUsage } = useStore();
   const { actor } = useActor();
 
   const [name, setName] = useState("");
@@ -40,7 +42,38 @@ export default function CartPage() {
   const [pincode, setPincode] = useState("");
   const [country, setCountry] = useState("India");
 
+  // Coupon state
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discount: number;
+    message: string;
+  } | null>(null);
+
   const hasMerchItems = items.some((i) => i.type === "merch");
+  const discountAmount = appliedCoupon?.discount ?? 0;
+  const adjustedTotal = Math.max(0, cartTotal - discountAmount);
+
+  const handleApplyCoupon = () => {
+    const code = couponCode.trim().toUpperCase();
+    if (!code) return;
+    const result = applyCoupon(code, cartTotal);
+    if (result.valid) {
+      setAppliedCoupon({
+        code,
+        discount: result.discount,
+        message: result.message,
+      });
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+  };
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,11 +147,16 @@ export default function CartPage() {
         customerEmail: email.trim(),
         customerName: name.trim(),
         items: orderItems,
-        totalAmount: cartTotal,
+        totalAmount: adjustedTotal,
         stripeSessionId: "",
         status: "pending",
         shippingAddress,
       });
+
+      // Increment coupon usage if applied
+      if (appliedCoupon) {
+        incrementCouponUsage(appliedCoupon.code);
+      }
 
       // Build Stripe items
       const stripeItems = items.map((i) => ({
@@ -326,12 +364,98 @@ export default function CartPage() {
                   </div>
                 ))}
               </div>
+
               <Separator className="my-4 bg-white/10" />
-              <div className="flex justify-between font-bold text-foreground">
-                <span>Total</span>
-                <span className="text-primary text-lg">
-                  ${(cartTotal / 100).toFixed(2)}
-                </span>
+
+              {/* Coupon Input */}
+              <div className="mb-4">
+                <AnimatePresence mode="wait">
+                  {appliedCoupon ? (
+                    <motion.div
+                      key="applied"
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      className="space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-1.5 text-green-400">
+                          <Tag className="w-3.5 h-3.5" />
+                          <span className="font-mono font-semibold">
+                            {appliedCoupon.code}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          className="text-muted-foreground hover:text-destructive transition-colors"
+                          data-ocid="cart.toggle"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="flex justify-between text-sm text-green-400">
+                        <span>Discount</span>
+                        <span>
+                          -${(appliedCoupon.discount / 100).toFixed(2)}
+                        </span>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="input"
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      className="flex gap-2"
+                    >
+                      <Input
+                        data-ocid="cart.input"
+                        value={couponCode}
+                        onChange={(e) =>
+                          setCouponCode(e.target.value.toUpperCase())
+                        }
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && handleApplyCoupon()
+                        }
+                        placeholder="Coupon code"
+                        className="bg-muted/30 border-white/10 text-sm h-9 font-mono uppercase placeholder:normal-case placeholder:font-sans"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleApplyCoupon}
+                        disabled={!couponCode.trim()}
+                        className="h-9 px-3 border-primary/40 text-primary hover:bg-primary/10 whitespace-nowrap text-xs"
+                        data-ocid="cart.secondary_button"
+                      >
+                        Apply
+                      </Button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <Separator className="my-4 bg-white/10" />
+
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Subtotal</span>
+                  <span>${(cartTotal / 100).toFixed(2)}</span>
+                </div>
+                {appliedCoupon && (
+                  <div className="flex justify-between text-sm text-green-400">
+                    <span>Coupon ({appliedCoupon.code})</span>
+                    <span>-${(appliedCoupon.discount / 100).toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-foreground pt-1">
+                  <span>Total</span>
+                  <span className="text-primary text-lg">
+                    ${(adjustedTotal / 100).toFixed(2)}
+                  </span>
+                </div>
               </div>
             </div>
 

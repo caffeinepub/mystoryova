@@ -55,6 +55,16 @@ export interface Order {
   shippingAddress?: ShippingAddress;
 }
 
+export interface Coupon {
+  code: string;
+  discountType: "percent" | "fixed";
+  discountValue: number;
+  minOrderAmount?: number;
+  maxUses?: number;
+  usedCount: number;
+  active: boolean;
+}
+
 const SEED_MERCH: MerchProduct[] = [
   {
     id: "merch_1",
@@ -159,10 +169,21 @@ const SEED_AUDIOBOOKS: AudiobookProduct[] = [
   },
 ];
 
+const SEED_COUPONS: Coupon[] = [
+  {
+    code: "WELCOME10",
+    discountType: "percent",
+    discountValue: 10,
+    active: true,
+    usedCount: 0,
+  },
+];
+
 interface StoreContextValue {
   merch: MerchProduct[];
   audiobooks: AudiobookProduct[];
   orders: Order[];
+  coupons: Coupon[];
   addMerch: (p: Omit<MerchProduct, "id">) => void;
   updateMerch: (id: string, p: Partial<MerchProduct>) => void;
   deleteMerch: (id: string) => void;
@@ -176,6 +197,14 @@ interface StoreContextValue {
     sessionId?: string,
   ) => void;
   getPurchasedAudiobooks: (email: string) => AudiobookProduct[];
+  addCoupon: (c: Omit<Coupon, "usedCount">) => void;
+  updateCoupon: (code: string, c: Partial<Coupon>) => void;
+  deleteCoupon: (code: string) => void;
+  applyCoupon: (
+    code: string,
+    cartTotal: number,
+  ) => { valid: boolean; discount: number; message: string };
+  incrementCouponUsage: (code: string) => void;
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null);
@@ -199,6 +228,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [orders, setOrders] = useState<Order[]>(() =>
     load("mystoryova_orders", []),
   );
+  const [coupons, setCoupons] = useState<Coupon[]>(() =>
+    load("mystoryova_coupons", SEED_COUPONS),
+  );
 
   useEffect(() => {
     localStorage.setItem("mystoryova_merch", JSON.stringify(merch));
@@ -209,6 +241,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem("mystoryova_orders", JSON.stringify(orders));
   }, [orders]);
+  useEffect(() => {
+    localStorage.setItem("mystoryova_coupons", JSON.stringify(coupons));
+  }, [coupons]);
 
   const addMerch = (p: Omit<MerchProduct, "id">) => {
     setMerch((prev) => [...prev, { ...p, id: `merch_${Date.now()}` }]);
@@ -271,12 +306,88 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return audiobooks.filter((ab) => purchasedIds.has(ab.id));
   };
 
+  const addCoupon = (c: Omit<Coupon, "usedCount">) => {
+    setCoupons((prev) => [
+      ...prev,
+      { ...c, code: c.code.toUpperCase(), usedCount: 0 },
+    ]);
+  };
+
+  const updateCoupon = (code: string, c: Partial<Coupon>) => {
+    setCoupons((prev) =>
+      prev.map((cp) =>
+        cp.code.toUpperCase() === code.toUpperCase() ? { ...cp, ...c } : cp,
+      ),
+    );
+  };
+
+  const deleteCoupon = (code: string) => {
+    setCoupons((prev) =>
+      prev.filter((cp) => cp.code.toUpperCase() !== code.toUpperCase()),
+    );
+  };
+
+  const applyCoupon = (
+    code: string,
+    cartTotal: number,
+  ): { valid: boolean; discount: number; message: string } => {
+    const coupon = coupons.find(
+      (cp) => cp.code.toUpperCase() === code.toUpperCase(),
+    );
+    if (!coupon) {
+      return { valid: false, discount: 0, message: "Invalid coupon code." };
+    }
+    if (!coupon.active) {
+      return {
+        valid: false,
+        discount: 0,
+        message: "This coupon is no longer active.",
+      };
+    }
+    if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
+      return {
+        valid: false,
+        discount: 0,
+        message: "This coupon has reached its usage limit.",
+      };
+    }
+    if (coupon.minOrderAmount && cartTotal < coupon.minOrderAmount) {
+      return {
+        valid: false,
+        discount: 0,
+        message: `Minimum order of $${(coupon.minOrderAmount / 100).toFixed(2)} required.`,
+      };
+    }
+    let discount = 0;
+    if (coupon.discountType === "percent") {
+      discount = Math.round((cartTotal * coupon.discountValue) / 100);
+    } else {
+      discount = Math.min(coupon.discountValue, cartTotal);
+    }
+    const label =
+      coupon.discountType === "percent"
+        ? `${coupon.discountValue}%`
+        : `$${(coupon.discountValue / 100).toFixed(2)}`;
+    return { valid: true, discount, message: `${label} discount applied!` };
+  };
+
+  const incrementCouponUsage = (code: string) => {
+    setCoupons((prev) =>
+      prev.map((cp) =>
+        cp.code.toUpperCase() === code.toUpperCase()
+          ? { ...cp, usedCount: cp.usedCount + 1 }
+          : cp,
+      ),
+    );
+  };
+
   return (
     <StoreContext.Provider
       value={{
         merch,
         audiobooks,
         orders,
+        coupons,
         addMerch,
         updateMerch,
         deleteMerch,
@@ -286,6 +397,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         addOrder,
         updateOrderStatus,
         getPurchasedAudiobooks,
+        addCoupon,
+        updateCoupon,
+        deleteCoupon,
+        applyCoupon,
+        incrementCouponUsage,
       }}
     >
       {children}

@@ -32,12 +32,13 @@ import {
   Pencil,
   Plus,
   ShoppingBag,
+  Tag,
   Trash2,
   Upload,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import type { AudiobookProduct, MerchProduct } from "../hooks/useStore";
+import type { AudiobookProduct, Coupon, MerchProduct } from "../hooks/useStore";
 import { useStore } from "../hooks/useStore";
 
 const MERCH_CATEGORIES = [
@@ -74,6 +75,13 @@ const EMPTY_AUDIO: Omit<AudiobookProduct, "id"> = {
   duration: "",
   coverUrl: "",
   narrator: "",
+};
+
+const EMPTY_COUPON: Omit<Coupon, "usedCount"> = {
+  code: "",
+  discountType: "percent",
+  discountValue: 10,
+  active: true,
 };
 
 /** Read a file as a base64 data URL */
@@ -396,7 +404,6 @@ function AudiobookForm({
           className="mt-1 bg-muted/30 border-white/10"
         />
       </div>
-
       <FileUploadField
         label="Cover Image"
         accept="image/*"
@@ -404,7 +411,6 @@ function AudiobookForm({
         onChange={(url) => setForm((p) => ({ ...p, coverUrl: url }))}
         hint="Upload from device or paste a URL"
       />
-
       <div className="border-t border-white/10 pt-4">
         <p className="text-xs tracking-widest text-primary font-semibold mb-3">
           AUDIO FILES
@@ -426,7 +432,6 @@ function AudiobookForm({
           />
         </div>
       </div>
-
       <div>
         <Label>Book ID (0 = standalone)</Label>
         <Input
@@ -451,6 +456,278 @@ function AudiobookForm({
         >
           Cancel
         </Button>
+      </div>
+    </div>
+  );
+}
+
+function CouponsTab() {
+  const { coupons, addCoupon, updateCoupon, deleteCoupon } = useStore();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState<Omit<Coupon, "usedCount">>({
+    ...EMPTY_COUPON,
+  });
+
+  const handleSave = () => {
+    const code = form.code.trim().toUpperCase();
+    if (!code) {
+      toast.error("Coupon code is required.");
+      return;
+    }
+    if (form.discountValue <= 0) {
+      toast.error("Discount value must be greater than 0.");
+      return;
+    }
+    if (form.discountType === "percent" && form.discountValue > 100) {
+      toast.error("Percent discount cannot exceed 100.");
+      return;
+    }
+    addCoupon({ ...form, code });
+    toast.success(`Coupon "${code}" created.`);
+    setForm({ ...EMPTY_COUPON });
+    setDialogOpen(false);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <Tag className="w-4 h-4 text-primary" /> Coupon Codes
+        </h3>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              size="sm"
+              className="bg-primary text-primary-foreground hover:brightness-110 gap-1.5"
+              data-ocid="admin.primary_button"
+              onClick={() => {
+                setForm({ ...EMPTY_COUPON });
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Coupon
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="glass border border-white/10 bg-background/95">
+            <DialogHeader>
+              <DialogTitle className="font-serif text-foreground">
+                New Coupon
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div>
+                <Label>Code</Label>
+                <Input
+                  data-ocid="admin.input"
+                  value={form.code}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      code: e.target.value.toUpperCase(),
+                    }))
+                  }
+                  placeholder="e.g. SAVE10"
+                  className="mt-1 bg-muted/30 border-white/10 font-mono"
+                />
+              </div>
+              <div>
+                <Label>Discount Type</Label>
+                <Select
+                  value={form.discountType}
+                  onValueChange={(v) =>
+                    setForm((p) => ({
+                      ...p,
+                      discountType: v as "percent" | "fixed",
+                      discountValue: v === "percent" ? 10 : 500,
+                    }))
+                  }
+                >
+                  <SelectTrigger
+                    data-ocid="admin.select"
+                    className="mt-1 bg-muted/30 border-white/10"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percent">Percent Off (%)</SelectItem>
+                    <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>
+                  Value{" "}
+                  {form.discountType === "percent"
+                    ? "(1–100, e.g. 10 = 10%)"
+                    : "(in dollars, e.g. 5 = $5.00)"}
+                </Label>
+                <Input
+                  data-ocid="admin.input"
+                  type="number"
+                  min={1}
+                  max={form.discountType === "percent" ? 100 : undefined}
+                  value={
+                    form.discountType === "fixed"
+                      ? (form.discountValue / 100).toFixed(2)
+                      : form.discountValue
+                  }
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      discountValue:
+                        form.discountType === "fixed"
+                          ? Math.round(Number(e.target.value) * 100)
+                          : Number(e.target.value),
+                    }))
+                  }
+                  className="mt-1 bg-muted/30 border-white/10"
+                />
+                {form.discountType === "fixed" && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    = ${(form.discountValue / 100).toFixed(2)}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label>Minimum Order Amount (optional, in dollars)</Label>
+                <Input
+                  data-ocid="admin.input"
+                  type="number"
+                  min={0}
+                  placeholder="e.g. 10 = $10.00 minimum"
+                  value={form.minOrderAmount ? form.minOrderAmount / 100 : ""}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      minOrderAmount: e.target.value
+                        ? Math.round(Number(e.target.value) * 100)
+                        : undefined,
+                    }))
+                  }
+                  className="mt-1 bg-muted/30 border-white/10"
+                />
+              </div>
+              <div>
+                <Label>Max Uses (leave blank for unlimited)</Label>
+                <Input
+                  data-ocid="admin.input"
+                  type="number"
+                  min={0}
+                  placeholder="Leave blank for unlimited"
+                  value={form.maxUses ?? ""}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      maxUses: e.target.value
+                        ? Number(e.target.value)
+                        : undefined,
+                    }))
+                  }
+                  className="mt-1 bg-muted/30 border-white/10"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={form.active}
+                  onCheckedChange={(v) => setForm((p) => ({ ...p, active: v }))}
+                  data-ocid="admin.switch"
+                />
+                <Label>Active</Label>
+              </div>
+              <Button
+                type="button"
+                onClick={handleSave}
+                className="w-full bg-primary text-primary-foreground hover:brightness-110"
+                data-ocid="admin.save_button"
+              >
+                Create Coupon
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="glass rounded-2xl border border-white/10 overflow-hidden">
+        <Table data-ocid="admin.table">
+          <TableHeader>
+            <TableRow className="border-white/10">
+              <TableHead>Code</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Value</TableHead>
+              <TableHead>Min Order</TableHead>
+              <TableHead>Max Uses</TableHead>
+              <TableHead>Used</TableHead>
+              <TableHead>Active</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {coupons.map((coupon, i) => (
+              <TableRow
+                key={coupon.code}
+                data-ocid={`admin.row.${i + 1}`}
+                className="border-white/10"
+              >
+                <TableCell className="font-mono font-semibold text-primary">
+                  {coupon.code}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm capitalize">
+                  {coupon.discountType}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {coupon.discountType === "percent"
+                    ? `${coupon.discountValue}%`
+                    : `$${(coupon.discountValue / 100).toFixed(2)}`}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {coupon.minOrderAmount
+                    ? `$${(coupon.minOrderAmount / 100).toFixed(2)}`
+                    : "—"}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {coupon.maxUses ? coupon.maxUses : "∞"}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {coupon.usedCount}
+                </TableCell>
+                <TableCell>
+                  <Switch
+                    checked={coupon.active}
+                    onCheckedChange={(v) =>
+                      updateCoupon(coupon.code, { active: v })
+                    }
+                    data-ocid={`admin.switch.${i + 1}`}
+                  />
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    data-ocid={`admin.delete_button.${i + 1}`}
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive hover:bg-destructive/10"
+                    onClick={() => {
+                      deleteCoupon(coupon.code);
+                      toast.success(`Coupon "${coupon.code}" deleted.`);
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            {coupons.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={8}
+                  className="text-center text-muted-foreground py-10"
+                  data-ocid="admin.empty_state"
+                >
+                  No coupons yet. Create your first coupon above.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -510,6 +787,9 @@ export default function AdminStoreTab() {
           </TabsTrigger>
           <TabsTrigger value="audiobooks" data-ocid="admin.tab">
             <Headphones className="w-3.5 h-3.5 mr-1.5" /> Audiobooks
+          </TabsTrigger>
+          <TabsTrigger value="coupons" data-ocid="admin.tab">
+            <Tag className="w-3.5 h-3.5 mr-1.5" /> Coupons
           </TabsTrigger>
         </TabsList>
 
@@ -747,6 +1027,11 @@ export default function AdminStoreTab() {
               </TableBody>
             </Table>
           </div>
+        </TabsContent>
+
+        {/* Coupons */}
+        <TabsContent value="coupons" data-ocid="admin.panel">
+          <CouponsTab />
         </TabsContent>
       </Tabs>
     </div>
