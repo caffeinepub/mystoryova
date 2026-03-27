@@ -18,19 +18,40 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useActor } from "../hooks/useActor";
 import { useCart } from "../hooks/useCart";
 import { useMetaTags } from "../hooks/useMetaTags";
 import { useStore } from "../hooks/useStore";
 
+declare global {
+  interface Window {
+    Razorpay: new (options: Record<string, unknown>) => { open: () => void };
+  }
+}
+
+function loadRazorpayScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (document.getElementById("razorpay-checkout-js")) {
+      resolve();
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "razorpay-checkout-js";
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Razorpay SDK"));
+    document.body.appendChild(script);
+  });
+}
+
 export default function CartPage() {
   useMetaTags({ title: "Cart — Mystoryova Store" });
   const { items, removeFromCart, updateQuantity, cartTotal } = useCart();
-  const { addOrder, applyCoupon, incrementCouponUsage } = useStore();
-  const { actor } = useActor();
+  const { addOrder, applyCoupon, incrementCouponUsage, updateOrderStatus } =
+    useStore();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -115,15 +136,15 @@ export default function CartPage() {
     setLoading(true);
 
     try {
-      // Check if Stripe is configured
-      const stripeReady = await actor?.isStripeConfigured();
-      if (!stripeReady) {
+      const razorpayKeyId = localStorage.getItem("mystoryova_rzp_key_id");
+      if (!razorpayKeyId) {
         toast.error("Payment system is being set up. Please check back soon.");
         setLoading(false);
         return;
       }
 
-      // Create local order with pending status
+      await loadRazorpayScript();
+
       const orderItems = items.map((i) => ({
         productId: i.productId,
         productType: i.type as "merch" | "audiobook",
@@ -153,35 +174,33 @@ export default function CartPage() {
         shippingAddress,
       });
 
-      // Increment coupon usage if applied
       if (appliedCoupon) {
         incrementCouponUsage(appliedCoupon.code);
       }
 
-      // Build Stripe items
-      const stripeItems = items.map((i) => ({
-        currency: "usd",
-        productName: i.title,
-        productDescription:
-          i.type === "audiobook" ? "Audiobook" : "Merchandise",
-        priceInCents: BigInt(i.price),
-        quantity: BigInt(i.quantity),
-      }));
+      const rzpOptions = {
+        key: razorpayKeyId,
+        amount: adjustedTotal,
+        currency: "INR",
+        name: "Mystoryova",
+        description: items.map((i) => i.title).join(", "),
+        prefill: {
+          name: name.trim(),
+          email: email.trim(),
+          contact: phone.trim(),
+        },
+        theme: { color: "#c9a84c" },
+        handler: (response: { razorpay_payment_id: string }) => {
+          updateOrderStatus(order.id, "paid", response.razorpay_payment_id);
+          window.location.href = `/store/success?order_id=${order.id}&payment_id=${response.razorpay_payment_id}`;
+        },
+        modal: {
+          ondismiss: () => setLoading(false),
+        },
+      };
 
-      const successUrl = `${window.location.origin}/store/success?order_id=${order.id}&session_id={CHECKOUT_SESSION_ID}`;
-      const cancelUrl = `${window.location.origin}/store/cart`;
-
-      const checkoutUrl = await actor?.createCheckoutSession(
-        stripeItems,
-        successUrl,
-        cancelUrl,
-      );
-
-      if (!checkoutUrl) {
-        throw new Error("Failed to create checkout session.");
-      }
-
-      window.location.href = checkoutUrl;
+      const rzp = new window.Razorpay(rzpOptions as Record<string, unknown>);
+      rzp.open();
     } catch (err) {
       const msg =
         err instanceof Error
@@ -189,7 +208,6 @@ export default function CartPage() {
           : "Checkout failed. Please try again.";
       setError(msg);
       toast.error(msg);
-    } finally {
       setLoading(false);
     }
   };
@@ -331,7 +349,7 @@ export default function CartPage() {
                         </span>
                       )}
                       <span className="font-bold text-primary">
-                        ${((item.price * item.quantity) / 100).toFixed(2)}
+                        ₹{((item.price * item.quantity) / 100).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -359,7 +377,7 @@ export default function CartPage() {
                       {item.title} × {item.quantity}
                     </span>
                     <span>
-                      ${((item.price * item.quantity) / 100).toFixed(2)}
+                      ₹{((item.price * item.quantity) / 100).toFixed(2)}
                     </span>
                   </div>
                 ))}
@@ -397,7 +415,7 @@ export default function CartPage() {
                       <div className="flex justify-between text-sm text-green-400">
                         <span>Discount</span>
                         <span>
-                          -${(appliedCoupon.discount / 100).toFixed(2)}
+                          -₹{(appliedCoupon.discount / 100).toFixed(2)}
                         </span>
                       </div>
                     </motion.div>
@@ -442,18 +460,18 @@ export default function CartPage() {
               <div className="space-y-1">
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Subtotal</span>
-                  <span>${(cartTotal / 100).toFixed(2)}</span>
+                  <span>₹{(cartTotal / 100).toFixed(2)}</span>
                 </div>
                 {appliedCoupon && (
                   <div className="flex justify-between text-sm text-green-400">
                     <span>Coupon ({appliedCoupon.code})</span>
-                    <span>-${(appliedCoupon.discount / 100).toFixed(2)}</span>
+                    <span>-₹{(appliedCoupon.discount / 100).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-foreground pt-1">
                   <span>Total</span>
                   <span className="text-primary text-lg">
-                    ${(adjustedTotal / 100).toFixed(2)}
+                    ₹{(adjustedTotal / 100).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -505,6 +523,23 @@ export default function CartPage() {
                 <p className="text-xs text-muted-foreground mt-1">
                   Used to access purchased audiobooks in My Library.
                 </p>
+              </div>
+              <div>
+                <Label
+                  htmlFor="cart-phone"
+                  className="text-sm text-muted-foreground"
+                >
+                  Phone Number
+                </Label>
+                <Input
+                  id="cart-phone"
+                  data-ocid="cart.input"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className="mt-1 bg-muted/30 border-white/10"
+                />
               </div>
 
               {/* Shipping Address — shown only for merch orders */}
@@ -643,10 +678,11 @@ export default function CartPage() {
                 ) : (
                   <ShoppingCart className="w-4 h-4" />
                 )}
-                {loading ? "Redirecting to Checkout..." : "Proceed to Checkout"}
+                {loading ? "Opening Razorpay..." : "Proceed to Checkout"}
               </Button>
               <p className="text-xs text-muted-foreground text-center">
-                Secure payment powered by Stripe
+                Secure payment powered by Razorpay · UPI, Cards, Net Banking
+                &amp; more
               </p>
             </form>
           </div>

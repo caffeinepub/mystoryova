@@ -5,14 +5,12 @@ import { Link } from "@tanstack/react-router";
 import {
   CheckCircle,
   Headphones,
-  Loader2,
   Package,
   RotateCcw,
   ShoppingBag,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { useActor } from "../hooks/useActor";
 import { useCart } from "../hooks/useCart";
 import { useMetaTags } from "../hooks/useMetaTags";
 import { useStore } from "../hooks/useStore";
@@ -20,7 +18,6 @@ import type { Order } from "../hooks/useStore";
 
 export default function OrderSuccessPage() {
   useMetaTags({ title: "Order Confirmed — Mystoryova Store" });
-  const { actor } = useActor();
   const { clearCart } = useCart();
   const { orders, updateOrderStatus } = useStore();
 
@@ -37,11 +34,12 @@ export default function OrderSuccessPage() {
 
     const params = new URLSearchParams(window.location.search);
     const orderId = params.get("order_id");
-    const sessionId = params.get("session_id");
+    const paymentId =
+      params.get("payment_id") ?? params.get("razorpay_payment_id") ?? "";
 
-    if (!orderId || !sessionId) {
+    if (!orderId) {
       setStatus("error");
-      setErrorMsg("Missing order or session information.");
+      setErrorMsg("Missing order information.");
       return;
     }
 
@@ -53,29 +51,11 @@ export default function OrderSuccessPage() {
     }
 
     setOrder(foundOrder);
-
-    (async () => {
-      try {
-        if (actor) {
-          await actor.getStripeSessionStatus(sessionId);
-        }
-        updateOrderStatus(orderId, "paid", sessionId);
-        setOrder((prev) =>
-          prev ? { ...prev, status: "paid", stripeSessionId: sessionId } : prev,
-        );
-        clearCart();
-        setStatus("confirmed");
-      } catch {
-        // On error, still mark paid (Stripe redirect implies success)
-        updateOrderStatus(orderId, "paid", sessionId);
-        setOrder((prev) =>
-          prev ? { ...prev, status: "paid", stripeSessionId: sessionId } : prev,
-        );
-        clearCart();
-        setStatus("confirmed");
-      }
-    })();
-  }, [actor, orders, updateOrderStatus, clearCart]);
+    updateOrderStatus(orderId, "paid", paymentId);
+    setOrder({ ...foundOrder, status: "paid", stripeSessionId: paymentId });
+    clearCart();
+    setStatus("confirmed");
+  }, [orders, updateOrderStatus, clearCart]);
 
   const hasAudiobooks = order?.items.some((i) => i.productType === "audiobook");
   const hasMerch = order?.items.some((i) => i.productType === "merch");
@@ -88,7 +68,7 @@ export default function OrderSuccessPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4" data-ocid="order.loading_state">
-          <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto" />
+          <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
           <p className="text-muted-foreground">Confirming your order...</p>
         </div>
       </div>
@@ -162,7 +142,7 @@ export default function OrderSuccessPage() {
                     </Badge>
                   </div>
                   <span className="text-sm font-medium text-primary">
-                    ${((item.price * item.quantity) / 100).toFixed(2)}
+                    ₹{((item.price * item.quantity) / 100).toFixed(2)}
                   </span>
                 </div>
               ))}
@@ -171,7 +151,7 @@ export default function OrderSuccessPage() {
             <div className="flex justify-between font-bold">
               <span>Total Paid</span>
               <span className="text-primary">
-                ${(order.totalAmount / 100).toFixed(2)}
+                ₹{(order.totalAmount / 100).toFixed(2)}
               </span>
             </div>
           </div>

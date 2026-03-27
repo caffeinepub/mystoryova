@@ -16,10 +16,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, KeyRound, Loader2, MapPin } from "lucide-react";
+import { Eye, KeyRound, MapPin } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useActor } from "../hooks/useActor";
 import { useStore } from "../hooks/useStore";
 import type { Order } from "../hooks/useStore";
 
@@ -62,7 +61,7 @@ function OrderDetailModal({
           <div>
             <p className="text-xs text-muted-foreground">Total</p>
             <p className="text-primary font-bold">
-              ${(order.totalAmount / 100).toFixed(2)}
+              ₹{(order.totalAmount / 100).toFixed(2)}
             </p>
           </div>
           <div className="col-span-2">
@@ -71,6 +70,16 @@ function OrderDetailModal({
               {new Date(order.createdAt).toLocaleString()}
             </p>
           </div>
+          {order.stripeSessionId && (
+            <div className="col-span-2">
+              <p className="text-xs text-muted-foreground">
+                Razorpay Payment ID
+              </p>
+              <p className="text-foreground font-mono text-xs break-all">
+                {order.stripeSessionId}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Shipping Address */}
@@ -111,7 +120,7 @@ function OrderDetailModal({
                   </span>
                 </div>
                 <span className="text-primary">
-                  ${((item.price * item.quantity) / 100).toFixed(2)}
+                  ₹{((item.price * item.quantity) / 100).toFixed(2)}
                 </span>
               </div>
             ))}
@@ -132,34 +141,19 @@ function OrderDetailModal({
 
 export default function AdminOrdersTab() {
   const { orders } = useStore();
-  const { actor } = useActor();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [stripeKey, setStripeKey] = useState("");
-  const [allowedCountries, setAllowedCountries] = useState("US,GB,CA,AU,IN");
-  const [savingStripe, setSavingStripe] = useState(false);
+  const [rzpKeyId, setRzpKeyId] = useState(
+    () => localStorage.getItem("mystoryova_rzp_key_id") ?? "",
+  );
 
-  const handleSaveStripe = async (e: React.FormEvent) => {
+  const handleSaveRazorpay = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripeKey.trim()) {
-      toast.error("Please enter a Stripe secret key.");
+    if (!rzpKeyId.trim()) {
+      toast.error("Please enter your Razorpay Key ID.");
       return;
     }
-    setSavingStripe(true);
-    try {
-      await actor?.setStripeConfiguration({
-        secretKey: stripeKey.trim(),
-        allowedCountries: allowedCountries
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-      });
-      toast.success("Stripe configured successfully.");
-      setStripeKey("");
-    } catch {
-      toast.error("Failed to save Stripe configuration.");
-    } finally {
-      setSavingStripe(false);
-    }
+    localStorage.setItem("mystoryova_rzp_key_id", rzpKeyId.trim());
+    toast.success("Razorpay Key ID saved successfully.");
   };
 
   const sortedOrders = [...orders].sort(
@@ -204,7 +198,7 @@ export default function AdminOrdersTab() {
                     {order.customerEmail}
                   </TableCell>
                   <TableCell className="text-primary font-medium">
-                    ${(order.totalAmount / 100).toFixed(2)}
+                    ₹{(order.totalAmount / 100).toFixed(2)}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -247,60 +241,44 @@ export default function AdminOrdersTab() {
         </div>
       </div>
 
-      {/* Stripe Config */}
+      {/* Razorpay Config */}
       <div className="glass rounded-2xl p-6 border border-white/10 max-w-lg">
         <div className="flex items-center gap-2 mb-5">
           <KeyRound className="w-5 h-5 text-primary" />
           <h2 className="font-serif text-xl font-semibold text-foreground">
-            Stripe Configuration
+            Razorpay Configuration
           </h2>
         </div>
-        <form onSubmit={handleSaveStripe} className="space-y-4">
+        <p className="text-sm text-muted-foreground mb-4">
+          Enter your Key ID (starts with{" "}
+          <code className="font-mono">rzp_live_</code> or{" "}
+          <code className="font-mono">rzp_test_</code>). Find it in{" "}
+          <strong>Razorpay Dashboard → Settings → API Keys</strong>.
+        </p>
+        <form onSubmit={handleSaveRazorpay} className="space-y-4">
           <div>
             <Label
-              htmlFor="stripe-key"
+              htmlFor="rzp-key-id"
               className="text-sm text-muted-foreground"
             >
-              Stripe Secret Key
+              Razorpay Key ID
             </Label>
             <Input
-              id="stripe-key"
+              id="rzp-key-id"
               data-ocid="admin.input"
-              type="password"
-              value={stripeKey}
-              onChange={(e) => setStripeKey(e.target.value)}
-              placeholder="sk_live_... or sk_test_..."
-              className="mt-1 bg-muted/30 border-white/10"
-            />
-          </div>
-          <div>
-            <Label
-              htmlFor="stripe-countries"
-              className="text-sm text-muted-foreground"
-            >
-              Allowed Countries (comma-separated ISO codes)
-            </Label>
-            <Input
-              id="stripe-countries"
-              data-ocid="admin.input"
-              value={allowedCountries}
-              onChange={(e) => setAllowedCountries(e.target.value)}
-              placeholder="US,GB,CA,AU,IN"
-              className="mt-1 bg-muted/30 border-white/10"
+              value={rzpKeyId}
+              onChange={(e) => setRzpKeyId(e.target.value)}
+              placeholder="rzp_live_xxxxxxxxxxxx"
+              className="mt-1 bg-muted/30 border-white/10 font-mono"
             />
           </div>
           <Button
             type="submit"
             data-ocid="admin.save_button"
-            disabled={savingStripe}
             className="bg-primary text-primary-foreground hover:brightness-110 gap-2"
           >
-            {savingStripe ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <KeyRound className="w-4 h-4" />
-            )}
-            {savingStripe ? "Saving..." : "Save Stripe Config"}
+            <KeyRound className="w-4 h-4" />
+            Save Razorpay Key
           </Button>
         </form>
       </div>
