@@ -139,7 +139,9 @@ export default function StorePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {audiobooks.map((ab, idx) => {
                   const razorpayLink =
-                    RAZORPAY_AUDIOBOOK_LINKS[ab.title] ?? "#";
+                    ab.paymentLink?.trim() ||
+                    RAZORPAY_AUDIOBOOK_LINKS[ab.title] ||
+                    "#";
                   return (
                     <motion.div
                       key={ab.id}
@@ -223,7 +225,9 @@ export default function StorePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {merch.map((product, idx) => {
                   const razorpayLink =
-                    RAZORPAY_MERCH_LINKS[product.title] ?? "#";
+                    product.paymentLink?.trim() ||
+                    RAZORPAY_MERCH_LINKS[product.title] ||
+                    "#";
                   return (
                     <motion.div
                       key={product.id}

@@ -29,6 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Headphones,
+  Link2,
   Pencil,
   Plus,
   ShoppingBag,
@@ -60,6 +61,7 @@ const EMPTY_MERCH: Omit<MerchProduct, "id"> = {
   featured: false,
   sizes: [],
   stockBySize: {},
+  paymentLink: "",
 };
 
 const SIZED_CATEGORIES = ["T-Shirt", "Hoodie"];
@@ -75,6 +77,7 @@ const EMPTY_AUDIO: Omit<AudiobookProduct, "id"> = {
   duration: "",
   coverUrl: "",
   narrator: "",
+  paymentLink: "",
 };
 
 const EMPTY_COUPON: Omit<Coupon, "usedCount"> = {
@@ -312,6 +315,23 @@ function MerchForm({
           </div>
         </div>
       )}
+      <div className="border-t border-white/10 pt-3">
+        <Label className="flex items-center gap-1.5">
+          <Link2 className="w-3.5 h-3.5 text-primary" />
+          Razorpay Payment Link
+        </Label>
+        <Input
+          data-ocid="admin.input"
+          value={form.paymentLink ?? ""}
+          onChange={set("paymentLink")}
+          placeholder="https://rzp.io/l/your-link"
+          className="mt-1 bg-muted/30 border-white/10 font-mono text-sm"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Paste the Razorpay payment link URL. The &quot;Buy Now&quot; button
+          will open it in a new tab.
+        </p>
+      </div>
       <div className="flex gap-3 pt-2">
         <Button
           data-ocid="admin.save_button"
@@ -440,6 +460,23 @@ function AudiobookForm({
           onChange={set("bookId")}
           className="mt-1 bg-muted/30 border-white/10"
         />
+      </div>
+      <div className="border-t border-white/10 pt-3">
+        <Label className="flex items-center gap-1.5">
+          <Link2 className="w-3.5 h-3.5 text-primary" />
+          Razorpay Payment Link
+        </Label>
+        <Input
+          data-ocid="admin.input"
+          value={form.paymentLink ?? ""}
+          onChange={set("paymentLink")}
+          placeholder="https://rzp.io/l/your-link"
+          className="mt-1 bg-muted/30 border-white/10 font-mono text-sm"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Paste the Razorpay payment link URL. The &quot;Buy Now&quot; button
+          will open it in a new tab.
+        </p>
       </div>
       <div className="flex gap-3 pt-2">
         <Button
@@ -835,6 +872,7 @@ export default function AdminStoreTab() {
                   <TableHead>Price</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Featured</TableHead>
+                  <TableHead>Payment Link</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -876,6 +914,21 @@ export default function AdminStoreTab() {
                         <span className="text-muted-foreground text-xs">—</span>
                       )}
                     </TableCell>
+                    <TableCell>
+                      {p.paymentLink ? (
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs flex items-center gap-1 w-fit">
+                          <Link2 className="w-3 h-3 mr-1" />
+                          Set
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="secondary"
+                          className="text-xs text-muted-foreground w-fit"
+                        >
+                          Not set
+                        </Badge>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end">
                         <Button
@@ -908,7 +961,7 @@ export default function AdminStoreTab() {
                 {merch.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={7}
                       className="text-center text-muted-foreground py-10"
                       data-ocid="admin.empty_state"
                     >
@@ -962,6 +1015,7 @@ export default function AdminStoreTab() {
                   <TableHead>Narrator</TableHead>
                   <TableHead>Duration</TableHead>
                   <TableHead>Price</TableHead>
+                  <TableHead>Payment Link</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -983,6 +1037,21 @@ export default function AdminStoreTab() {
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       ${(ab.price / 100).toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      {ab.paymentLink ? (
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs flex items-center gap-1 w-fit">
+                          <Link2 className="w-3 h-3 mr-1" />
+                          Set
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="secondary"
+                          className="text-xs text-muted-foreground w-fit"
+                        >
+                          Not set
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end">
@@ -1016,7 +1085,7 @@ export default function AdminStoreTab() {
                 {audiobooks.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={5}
+                      colSpan={6}
                       className="text-center text-muted-foreground py-10"
                       data-ocid="admin.empty_state"
                     >

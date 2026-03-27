@@ -11,6 +11,7 @@ export interface MerchProduct {
   featured: boolean;
   sizes?: string[];
   stockBySize?: Record<string, number>;
+  paymentLink?: string;
 }
 
 export interface AudiobookProduct {
@@ -24,6 +25,7 @@ export interface AudiobookProduct {
   duration: string;
   coverUrl: string;
   narrator: string;
+  paymentLink?: string;
 }
 
 export interface OrderItem {

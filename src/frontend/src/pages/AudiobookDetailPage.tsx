@@ -53,7 +53,8 @@ export default function AudiobookDetailPage() {
     (i) => i.productId === ab.id && i.type === "audiobook",
   );
 
-  const razorpayLink = RAZORPAY_AUDIOBOOK_LINKS[ab.title] ?? "#";
+  const razorpayLink =
+    ab.paymentLink?.trim() || RAZORPAY_AUDIOBOOK_LINKS[ab.title] || "#";
 
   const handleBuy = () => {
     if (inCart) return;

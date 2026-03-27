@@ -68,7 +68,8 @@ export default function MerchDetailPage() {
       (!product.sizes?.length || i.selectedSize === selectedSize),
   );
 
-  const razorpayLink = RAZORPAY_MERCH_LINKS[product.title] ?? "#";
+  const razorpayLink =
+    product.paymentLink?.trim() || RAZORPAY_MERCH_LINKS[product.title] || "#";
 
   const handleAdd = () => {
     if (product.sizes && product.sizes.length > 0 && !selectedSize) {
