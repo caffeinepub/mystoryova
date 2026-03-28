@@ -35,7 +35,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { BlogPost, Book } from "../backend";
 import { loadConfig } from "../config";
@@ -87,12 +87,11 @@ type ForgotStep = "email" | "pin";
 
 function LoginForm() {
   const { login, isActorReady } = useAdmin();
+  const { actor } = useActor();
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isWakingUp, setIsWakingUp] = useState(false);
-  const [canisterReady, setCanisterReady] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [forgotStep, setForgotStep] = useState<ForgotStep>("email");
   const [recoveryEmail, setRecoveryEmail] = useState("");
@@ -103,64 +102,24 @@ function LoginForm() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotError, setForgotError] = useState("");
   const [resetDone, setResetDone] = useState(false);
-  const { actor } = useActor();
 
-  // Keep pinging the backend until it responds, then allow login.
-  // This ensures the canister is truly reachable before we enable the button.
-  useEffect(() => {
-    if (!actor) return;
-    let cancelled = false;
-    const ping = async () => {
-      while (!cancelled) {
-        try {
-          await actor.recordPageVisit("__wake__");
-          if (!cancelled) setCanisterReady(true);
-          return; // success — stop pinging
-        } catch {
-          if (cancelled) return;
-          // canister not reachable yet — wait and try again
-          await new Promise((r) => setTimeout(r, 3000));
-        }
-      }
-    };
-    ping();
-    return () => {
-      cancelled = true;
-    };
-  }, [actor]);
+  // useActor already verifies canister connectivity before returning actor.
+  // isActorReady == true means the canister is reachable and ready to accept calls.
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isActorReady || !canisterReady) {
-      setError(
-        "Server is still warming up. Please wait a moment and try again.",
-      );
-      return;
-    }
+    if (!isActorReady) return;
     setIsSubmitting(true);
-    setIsWakingUp(false);
     setError("");
     try {
-      // login() uses withCanisterRetry internally — it will retry up to 8 times
-      // automatically on any canister/network error, so we just await it here.
-      // Show "waking up" state after 2 seconds if still pending
-      const wakingTimer = setTimeout(() => setIsWakingUp(true), 2000);
-      let ok: boolean;
-      try {
-        ok = await login(password);
-      } finally {
-        clearTimeout(wakingTimer);
-        setIsWakingUp(false);
-      }
+      const ok = await login(password);
       if (!ok) {
         setError(
           "Incorrect password. If you forgot it, use 'Forgot password?' below.",
         );
       }
     } catch {
-      setError(
-        "Server could not be reached after multiple retries. Please refresh the page and try again in a moment.",
-      );
+      setError("Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -284,18 +243,13 @@ function LoginForm() {
           <Button
             data-ocid="admin.submit_button"
             type="submit"
-            disabled={!isActorReady || !canisterReady || isSubmitting}
+            disabled={!isActorReady || isSubmitting}
             className="w-full bg-primary text-primary-foreground hover:brightness-110"
           >
-            {!isActorReady || !canisterReady ? (
+            {!isActorReady ? (
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 Connecting to server...
-              </span>
-            ) : isWakingUp ? (
-              <span className="flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                Waking up server, please wait...
               </span>
             ) : isSubmitting ? (
               <span className="flex items-center gap-2">

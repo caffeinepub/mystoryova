@@ -18,7 +18,8 @@ export function useGetAllBooks() {
       return actor.getAllBooks();
     },
     enabled: !!actor && !actorFetching,
-    retry: 2,
+    retry: 5,
+    retryDelay: 3000,
   });
   return {
     ...query,
@@ -41,6 +42,8 @@ export function useGetBook(id: string) {
       return actor.getBook(bookBigId);
     },
     enabled: !!actor && !isFetching && !!id,
+    retry: 5,
+    retryDelay: 3000,
   });
 }
 
@@ -59,6 +62,8 @@ export function useGetRelatedBooks(bookId: string) {
       return actor.getRelatedBooks(relBigId);
     },
     enabled: !!actor && !isFetching && !!bookId,
+    retry: 5,
+    retryDelay: 3000,
   });
 }
 
@@ -77,6 +82,8 @@ export function useGetReviewsForBook(bookId: string) {
       return actor.getReviewsForBook(revBigId);
     },
     enabled: !!actor && !isFetching && !!bookId,
+    retry: 3,
+    retryDelay: 3000,
   });
 }
 
@@ -89,6 +96,8 @@ export function useGetPublishedBlogPosts() {
       return actor.getPublishedBlogPosts();
     },
     enabled: !!actor && !isFetching,
+    retry: 3,
+    retryDelay: 3000,
   });
 }
 
@@ -101,6 +110,8 @@ export function useGetAllBlogPosts() {
       return actor.getAllBlogPosts();
     },
     enabled: !!actor && !isFetching,
+    retry: 3,
+    retryDelay: 3000,
   });
 }
 
@@ -119,6 +130,8 @@ export function useGetBlogPost(id: string) {
       return actor.getBlogPost(blogBigId);
     },
     enabled: !!actor && !isFetching && !!id,
+    retry: 3,
+    retryDelay: 3000,
   });
 }
 

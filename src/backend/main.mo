@@ -573,7 +573,7 @@ actor {
     } else { false };
   };
 
-  let RECOVERY_EMAIL : Text = "mystoryova@gmail.com";
+  let RECOVERY_EMAIL : Text = "omchiddarwar4@gmail.com";
 
   public shared func generateResetPin(email : Text) : async ?Text {
     if (email.toLower() != RECOVERY_EMAIL) { return null };
