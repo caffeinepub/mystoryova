@@ -48,11 +48,11 @@ function isTransientError(e: unknown): boolean {
   return true;
 }
 
-/** Call `fn`, retrying up to `maxRetries` times on transient errors */
+/** Call `fn`, retrying up to `maxRetries` times on transient errors with exponential backoff */
 async function withCanisterRetry<T>(
   fn: () => Promise<T>,
-  maxRetries = 8,
-  delayMs = 4000,
+  maxRetries = 15,
+  baseDelayMs = 2000,
 ): Promise<T> {
   let lastError: unknown;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -61,7 +61,9 @@ async function withCanisterRetry<T>(
     } catch (e) {
       lastError = e;
       if (isTransientError(e) && attempt < maxRetries) {
-        await sleep(delayMs);
+        // Exponential backoff: 2s, 4s, 8s, then cap at 8s
+        const delay = Math.min(baseDelayMs * 2 ** attempt, 8000);
+        await sleep(delay);
         continue;
       }
       throw e;

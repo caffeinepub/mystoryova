@@ -92,6 +92,7 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isWakingUp, setIsWakingUp] = useState(false);
+  const [canisterReady, setCanisterReady] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [forgotStep, setForgotStep] = useState<ForgotStep>("email");
   const [recoveryEmail, setRecoveryEmail] = useState("");
@@ -104,19 +105,35 @@ function LoginForm() {
   const [resetDone, setResetDone] = useState(false);
   const { actor } = useActor();
 
-  // Proactively ping the backend on mount to wake the canister
-  // so it is ready by the time the user clicks "Enter Dashboard"
+  // Keep pinging the backend until it responds, then allow login.
+  // This ensures the canister is truly reachable before we enable the button.
   useEffect(() => {
     if (!actor) return;
-    // Fire-and-forget: just wake the canister; ignore the result
-    actor.recordPageVisit("__wake__").catch(() => {});
+    let cancelled = false;
+    const ping = async () => {
+      while (!cancelled) {
+        try {
+          await actor.recordPageVisit("__wake__");
+          if (!cancelled) setCanisterReady(true);
+          return; // success — stop pinging
+        } catch {
+          if (cancelled) return;
+          // canister not reachable yet — wait and try again
+          await new Promise((r) => setTimeout(r, 3000));
+        }
+      }
+    };
+    ping();
+    return () => {
+      cancelled = true;
+    };
   }, [actor]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isActorReady) {
+    if (!isActorReady || !canisterReady) {
       setError(
-        "Server is still connecting. Please wait a moment and try again.",
+        "Server is still warming up. Please wait a moment and try again.",
       );
       return;
     }
@@ -267,13 +284,13 @@ function LoginForm() {
           <Button
             data-ocid="admin.submit_button"
             type="submit"
-            disabled={!isActorReady || isSubmitting}
+            disabled={!isActorReady || !canisterReady || isSubmitting}
             className="w-full bg-primary text-primary-foreground hover:brightness-110"
           >
-            {!isActorReady ? (
+            {!isActorReady || !canisterReady ? (
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                Connecting...
+                Connecting to server...
               </span>
             ) : isWakingUp ? (
               <span className="flex items-center gap-2">
