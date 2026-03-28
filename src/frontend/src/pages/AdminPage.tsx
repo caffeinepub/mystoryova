@@ -91,6 +91,7 @@ function LoginForm() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isWakingUp, setIsWakingUp] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [forgotStep, setForgotStep] = useState<ForgotStep>("email");
   const [recoveryEmail, setRecoveryEmail] = useState("");
@@ -103,38 +104,45 @@ function LoginForm() {
   const [resetDone, setResetDone] = useState(false);
   const { actor } = useActor();
 
-  const [actorTimeout, setActorTimeout] = useState(false);
-
+  // Proactively ping the backend on mount to wake the canister
+  // so it is ready by the time the user clicks "Enter Dashboard"
   useEffect(() => {
-    if (isActorReady) {
-      setActorTimeout(false);
-      return;
-    }
-    const t = setTimeout(() => setActorTimeout(true), 10000);
-    return () => clearTimeout(t);
-  }, [isActorReady]);
+    if (!actor) return;
+    // Fire-and-forget: just wake the canister; ignore the result
+    actor.recordPageVisit("__wake__").catch(() => {});
+  }, [actor]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isActorReady) {
       setError(
-        "Backend is still connecting. Please wait a moment and try again.",
+        "Server is still connecting. Please wait a moment and try again.",
       );
       return;
     }
     setIsSubmitting(true);
+    setIsWakingUp(false);
     setError("");
     try {
-      const ok = await login(password);
+      // login() uses withCanisterRetry internally — it will retry up to 8 times
+      // automatically on any canister/network error, so we just await it here.
+      // Show "waking up" state after 2 seconds if still pending
+      const wakingTimer = setTimeout(() => setIsWakingUp(true), 2000);
+      let ok: boolean;
+      try {
+        ok = await login(password);
+      } finally {
+        clearTimeout(wakingTimer);
+        setIsWakingUp(false);
+      }
       if (!ok) {
         setError(
           "Incorrect password. If you forgot it, use 'Forgot password?' below.",
         );
       }
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
+    } catch {
       setError(
-        `Connection error: ${msg}. Please refresh the page and try again.`,
+        "Server could not be reached after multiple retries. Please refresh the page and try again in a moment.",
       );
     } finally {
       setIsSubmitting(false);
@@ -247,10 +255,7 @@ function LoginForm() {
               </button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Default password after each deployment:{" "}
-            <span className="font-mono text-primary">admin123</span>
-          </p>
+
           {error && (
             <p
               data-ocid="admin.error_state"
@@ -270,6 +275,11 @@ function LoginForm() {
                 <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 Connecting...
               </span>
+            ) : isWakingUp ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Waking up server, please wait...
+              </span>
             ) : isSubmitting ? (
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -279,11 +289,6 @@ function LoginForm() {
               "Enter Dashboard"
             )}
           </Button>
-          {actorTimeout && !isActorReady && (
-            <p className="text-destructive text-xs mt-2">
-              Could not connect to backend. Please refresh the page.
-            </p>
-          )}
         </form>
 
         <div className="mt-4 text-center">

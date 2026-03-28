@@ -1,13 +1,29 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Link, useParams } from "@tanstack/react-router";
-import { ArrowLeft, ShoppingCart, Truck, Zap } from "lucide-react";
+import { ArrowLeft, Ruler, ShoppingCart, Truck, Zap } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import StarRating from "../components/StarRating";
 import { RAZORPAY_MERCH_LINKS } from "../config/razorpayLinks";
 import { useCart } from "../hooks/useCart";
+import { useCurrency } from "../hooks/useCurrency";
 import { useMetaTags } from "../hooks/useMetaTags";
 import { useStore } from "../hooks/useStore";
 
@@ -19,6 +35,64 @@ const MERCH_GRADIENTS: Record<string, string> = {
   Poster: "from-purple-900/30 to-primary/30",
   Other: "from-secondary/50 to-muted/80",
 };
+
+const SIZE_CHART = [
+  {
+    size: "XS",
+    chestCm: "86–91",
+    chestIn: "34–36",
+    lengthCm: "66",
+    lengthIn: "26",
+  },
+  {
+    size: "S",
+    chestCm: "91–96",
+    chestIn: "36–38",
+    lengthCm: "68",
+    lengthIn: "26.8",
+  },
+  {
+    size: "M",
+    chestCm: "96–101",
+    chestIn: "38–40",
+    lengthCm: "70",
+    lengthIn: "27.6",
+  },
+  {
+    size: "L",
+    chestCm: "101–106",
+    chestIn: "40–42",
+    lengthCm: "72",
+    lengthIn: "28.3",
+  },
+  {
+    size: "XL",
+    chestCm: "106–111",
+    chestIn: "42–44",
+    lengthCm: "74",
+    lengthIn: "29.1",
+  },
+  {
+    size: "XXL",
+    chestCm: "116–121",
+    chestIn: "46–48",
+    lengthCm: "76",
+    lengthIn: "29.9",
+  },
+];
+
+const CLOTHING_KEYWORDS = [
+  "shirt",
+  "hoodie",
+  "apparel",
+  "clothing",
+  "tshirt",
+  "t-shirt",
+];
+
+function isClothing(category: string): boolean {
+  return CLOTHING_KEYWORDS.some((kw) => category.toLowerCase().includes(kw));
+}
 
 function MerchPlaceholder({ category }: { category: string }) {
   return (
@@ -32,10 +106,80 @@ function MerchPlaceholder({ category }: { category: string }) {
   );
 }
 
+function SizeChartModal() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          data-ocid="store.open_modal_button"
+          className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
+        >
+          <Ruler className="w-3.5 h-3.5" /> Size Chart
+        </button>
+      </DialogTrigger>
+      <DialogContent
+        className="max-w-lg bg-card border border-white/10"
+        data-ocid="store.dialog"
+      >
+        <DialogHeader>
+          <DialogTitle className="font-serif text-lg text-foreground">
+            Size Chart
+          </DialogTitle>
+        </DialogHeader>
+        <p className="text-xs text-muted-foreground mb-3">
+          All measurements are approximate. For the best fit, measure yourself
+          and compare with the chart below.
+        </p>
+        <Table>
+          <TableHeader>
+            <TableRow className="border-white/10">
+              <TableHead className="text-primary text-xs">Size</TableHead>
+              <TableHead className="text-primary text-xs">Chest (cm)</TableHead>
+              <TableHead className="text-primary text-xs">Chest (in)</TableHead>
+              <TableHead className="text-primary text-xs">
+                Length (cm)
+              </TableHead>
+              <TableHead className="text-primary text-xs">
+                Length (in)
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {SIZE_CHART.map((row) => (
+              <TableRow
+                key={row.size}
+                className="border-white/10 hover:bg-white/5"
+              >
+                <TableCell className="font-semibold text-foreground text-sm">
+                  {row.size}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {row.chestCm}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {row.chestIn}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {row.lengthCm}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {row.lengthIn}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function MerchDetailPage() {
   const { id } = useParams({ from: "/store/merch/$id" });
   const { merch } = useStore();
   const { addToCart, items } = useCart();
+  const { formatPrice, getShipping, shippingRegion } = useCurrency();
   const [selectedSize, setSelectedSize] = useState("");
 
   const product = merch.find((m) => m.id === id) ?? null;
@@ -70,6 +214,11 @@ export default function MerchDetailPage() {
 
   const razorpayLink =
     product.paymentLink?.trim() || RAZORPAY_MERCH_LINKS[product.title] || "#";
+
+  const shipping = getShipping(
+    product.shippingIndia,
+    product.shippingInternational,
+  );
 
   const handleAdd = () => {
     if (product.sizes && product.sizes.length > 0 && !selectedSize) {
@@ -167,27 +316,53 @@ export default function MerchDetailPage() {
                 {product.description}
               </p>
 
-              <div className="flex items-center gap-4 pt-2">
-                <span className="font-serif text-3xl font-bold text-primary">
-                  ₹{(product.price / 100).toFixed(2)}
-                </span>
-                <Button
-                  data-ocid="store.primary_button"
-                  onClick={handleAdd}
-                  disabled={!product.inStock}
-                  className="gap-2 bg-primary text-primary-foreground hover:brightness-110"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  {product.inStock ? "Add to Cart" : "Out of Stock"}
-                </Button>
+              {/* Price + shipping */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-4">
+                  <span className="font-serif text-3xl font-bold text-primary">
+                    {formatPrice(
+                      product.priceINR,
+                      product.priceUSD,
+                      product.price,
+                    )}
+                  </span>
+                  <Button
+                    data-ocid="store.primary_button"
+                    onClick={handleAdd}
+                    disabled={!product.inStock}
+                    className="gap-2 bg-primary text-primary-foreground hover:brightness-110"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    {product.inStock ? "Add to Cart" : "Out of Stock"}
+                  </Button>
+                </div>
+                {shipping && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <Truck className="w-3.5 h-3.5 text-primary shrink-0" />
+                    {shipping.label}
+                    {shipping.amount === 0 && (
+                      <span className="text-green-400 text-xs font-semibold ml-1">
+                        FREE
+                      </span>
+                    )}
+                  </p>
+                )}
+                {!shipping && (
+                  <p className="text-xs text-muted-foreground">
+                    Shipping calculated at checkout
+                  </p>
+                )}
               </div>
 
               {/* Size selector */}
               {product.sizes && product.sizes.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-foreground">
-                    Select Size
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-foreground">
+                      Select Size
+                    </p>
+                    {isClothing(product.category) && <SizeChartModal />}
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {product.sizes.map((size) => {
                       const outOfStock = product.stockBySize?.[size] === 0;
@@ -256,7 +431,11 @@ export default function MerchDetailPage() {
               <div className="glass rounded-xl p-4 border border-white/10 space-y-2">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Truck className="w-4 h-4 text-primary" />
-                  <span>Ships within 3–5 business days</span>
+                  <span>
+                    {shippingRegion === "india"
+                      ? "Ships within India — 3–5 business days"
+                      : "International shipping — 7–14 business days"}
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Free returns within 14 days.{" "}
@@ -310,7 +489,7 @@ export default function MerchDetailPage() {
                     {item.title}
                   </p>
                   <p className="text-primary font-bold text-sm">
-                    ₹{(item.price / 100).toFixed(2)}
+                    {formatPrice(item.priceINR, item.priceUSD, item.price)}
                   </p>
                   <Link
                     to="/store/merch/$id"

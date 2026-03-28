@@ -2,13 +2,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "@tanstack/react-router";
-import { Headphones, ShoppingBag, ShoppingCart, Star, Zap } from "lucide-react";
+import {
+  DollarSign,
+  Headphones,
+  IndianRupee,
+  ShoppingBag,
+  ShoppingCart,
+  Star,
+  Zap,
+} from "lucide-react";
 import { motion } from "motion/react";
 import {
   RAZORPAY_AUDIOBOOK_LINKS,
   RAZORPAY_MERCH_LINKS,
 } from "../config/razorpayLinks";
 import { useCart } from "../hooks/useCart";
+import { useCurrency } from "../hooks/useCurrency";
 import { useMetaTags } from "../hooks/useMetaTags";
 import { useStore } from "../hooks/useStore";
 
@@ -45,6 +54,39 @@ function AudioCover({ coverUrl, title }: { coverUrl: string; title: string }) {
   );
 }
 
+function CurrencyToggle() {
+  const { currency, setCurrency } = useCurrency();
+  return (
+    <div
+      className="inline-flex items-center gap-1 glass border border-primary/30 rounded-full p-1"
+      data-ocid="store.toggle"
+    >
+      <button
+        type="button"
+        onClick={() => setCurrency("INR")}
+        className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+          currency === "INR"
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <IndianRupee className="w-3 h-3" /> INR
+      </button>
+      <button
+        type="button"
+        onClick={() => setCurrency("USD")}
+        className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+          currency === "USD"
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <DollarSign className="w-3 h-3" /> USD
+      </button>
+    </div>
+  );
+}
+
 export default function StorePage() {
   useMetaTags({
     title: "Mystoryova Store",
@@ -52,6 +94,7 @@ export default function StorePage() {
   });
   const { merch, audiobooks } = useStore();
   const { cartCount } = useCart();
+  const { formatPrice } = useCurrency();
 
   return (
     <div className="min-h-screen">
@@ -79,10 +122,18 @@ export default function StorePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-lg text-muted-foreground mb-8"
+            className="text-lg text-muted-foreground mb-6"
           >
             Own the Stories You Love
           </motion.p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="flex justify-center mb-4"
+          >
+            <CurrencyToggle />
+          </motion.div>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -170,7 +221,7 @@ export default function StorePage() {
                         </p>
                         <div className="flex items-center justify-between pt-1">
                           <span className="text-primary font-bold text-lg">
-                            ₹{(ab.price / 100).toFixed(2)}
+                            {formatPrice(ab.priceINR, ab.priceUSD, ab.price)}
                           </span>
                           <div className="flex gap-2">
                             {ab.sampleUrl && (
@@ -272,7 +323,11 @@ export default function StorePage() {
                         </p>
                         <div className="flex items-center justify-between">
                           <span className="text-primary font-bold">
-                            ₹{(product.price / 100).toFixed(2)}
+                            {formatPrice(
+                              product.priceINR,
+                              product.priceUSD,
+                              product.price,
+                            )}
                           </span>
                           <a
                             href={razorpayLink}

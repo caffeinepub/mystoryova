@@ -2,9 +2,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "@tanstack/react-router";
 import {
+  Globe,
   Headphones,
   MapPin,
   Minus,
@@ -19,6 +27,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useCart } from "../hooks/useCart";
+import { type ShippingRegion, useCurrency } from "../hooks/useCurrency";
 import { useMetaTags } from "../hooks/useMetaTags";
 import { useStore } from "../hooks/useStore";
 
@@ -46,8 +55,15 @@ function loadRazorpayScript(): Promise<void> {
 export default function CartPage() {
   useMetaTags({ title: "Cart — Mystoryova Store" });
   const { items, removeFromCart, updateQuantity, cartTotal } = useCart();
-  const { addOrder, applyCoupon, incrementCouponUsage, updateOrderStatus } =
-    useStore();
+  const {
+    addOrder,
+    applyCoupon,
+    incrementCouponUsage,
+    updateOrderStatus,
+    merch,
+  } = useStore();
+  const { currency, shippingRegion, setShippingRegion, formatPrice } =
+    useCurrency();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -61,7 +77,9 @@ export default function CartPage() {
   const [city, setCity] = useState("");
   const [addressState, setAddressState] = useState("");
   const [pincode, setPincode] = useState("");
-  const [country, setCountry] = useState("India");
+  const [country, setCountry] = useState(
+    shippingRegion === "india" ? "India" : "",
+  );
 
   // Coupon state
   const [couponCode, setCouponCode] = useState("");
@@ -73,7 +91,25 @@ export default function CartPage() {
 
   const hasMerchItems = items.some((i) => i.type === "merch");
   const discountAmount = appliedCoupon?.discount ?? 0;
-  const adjustedTotal = Math.max(0, cartTotal - discountAmount);
+
+  // Calculate shipping total for merch items
+  const shippingTotal = items.reduce((sum, item) => {
+    if (item.type !== "merch") return sum;
+    const product = merch.find((m) => m.id === item.productId);
+    if (!product) return sum;
+    if (shippingRegion === "india" && product.shippingIndia !== undefined) {
+      return sum + product.shippingIndia;
+    }
+    if (
+      shippingRegion === "international" &&
+      product.shippingInternational !== undefined
+    ) {
+      return sum + product.shippingInternational;
+    }
+    return sum;
+  }, 0);
+
+  const adjustedTotal = Math.max(0, cartTotal - discountAmount) + shippingTotal;
 
   const handleApplyCoupon = () => {
     const code = couponCode.trim().toUpperCase();
@@ -94,6 +130,11 @@ export default function CartPage() {
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
     setCouponCode("");
+  };
+
+  const handleRegionChange = (r: ShippingRegion) => {
+    setShippingRegion(r);
+    if (r === "india" && !country) setCountry("India");
   };
 
   const handleCheckout = async (e: React.FormEvent) => {
@@ -181,7 +222,7 @@ export default function CartPage() {
       const rzpOptions = {
         key: razorpayKeyId,
         amount: adjustedTotal,
-        currency: "INR",
+        currency: currency === "USD" ? "USD" : "INR",
         name: "Mystoryova",
         description: items.map((i) => i.title).join(", "),
         prefill: {
@@ -264,97 +305,122 @@ export default function CartPage() {
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4" data-ocid="cart.list">
             <AnimatePresence>
-              {items.map((item, idx) => (
-                <motion.div
-                  key={item.id}
-                  layout
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  data-ocid={`cart.item.${idx + 1}`}
-                  className="glass rounded-2xl p-4 border border-white/10 flex gap-4 items-start"
-                >
-                  {/* Thumbnail */}
-                  <div className="w-16 h-20 rounded-xl overflow-hidden shrink-0 bg-muted/30">
-                    {item.imageUrl ? (
-                      <img
-                        src={item.imageUrl}
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        {item.type === "audiobook" ? (
-                          <Headphones className="w-6 h-6 text-primary/40" />
-                        ) : (
-                          <ShoppingBag className="w-6 h-6 text-primary/40" />
-                        )}
-                      </div>
-                    )}
-                  </div>
+              {items.map((item, idx) => {
+                const product =
+                  item.type === "merch"
+                    ? merch.find((m) => m.id === item.productId)
+                    : null;
+                const itemShipping = product
+                  ? shippingRegion === "india"
+                    ? product.shippingIndia
+                    : product.shippingInternational
+                  : undefined;
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-medium text-foreground truncate">
-                          {item.title}
-                        </h3>
-                        <Badge variant="secondary" className="text-xs mt-1">
-                          {item.type === "audiobook" ? "Audiobook" : item.type}
-                        </Badge>
-                        {item.selectedSize && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            Size: {item.selectedSize}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        data-ocid={`cart.delete_button.${idx + 1}`}
-                        onClick={() => removeFromCart(item.id)}
-                        className="p-1 text-muted-foreground hover:text-destructive transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-3">
-                      {item.type === "merch" ? (
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity - 1)
-                            }
-                            className="w-7 h-7 rounded-full border border-white/15 text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="w-6 text-center text-sm font-medium">
-                            {item.quantity}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity + 1)
-                            }
-                            className="w-7 h-7 rounded-full border border-white/15 text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
+                return (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                    data-ocid={`cart.item.${idx + 1}`}
+                    className="glass rounded-2xl p-4 border border-white/10 flex gap-4 items-start"
+                  >
+                    {/* Thumbnail */}
+                    <div className="w-16 h-20 rounded-xl overflow-hidden shrink-0 bg-muted/30">
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
-                        <span className="text-xs text-muted-foreground">
-                          Qty: 1
-                        </span>
+                        <div className="w-full h-full flex items-center justify-center">
+                          {item.type === "audiobook" ? (
+                            <Headphones className="w-6 h-6 text-primary/40" />
+                          ) : (
+                            <ShoppingBag className="w-6 h-6 text-primary/40" />
+                          )}
+                        </div>
                       )}
-                      <span className="font-bold text-primary">
-                        ₹{((item.price * item.quantity) / 100).toFixed(2)}
-                      </span>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-medium text-foreground truncate">
+                            {item.title}
+                          </h3>
+                          <Badge variant="secondary" className="text-xs mt-1">
+                            {item.type === "audiobook"
+                              ? "Audiobook"
+                              : item.type}
+                          </Badge>
+                          {item.selectedSize && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Size: {item.selectedSize}
+                            </p>
+                          )}
+                          {itemShipping !== undefined && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {itemShipping === 0
+                                ? "Free shipping"
+                                : `+ ${shippingRegion === "india" ? "₹" : "$"}${(itemShipping / 100).toFixed(2)} shipping`}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          data-ocid={`cart.delete_button.${idx + 1}`}
+                          onClick={() => removeFromCart(item.id)}
+                          className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-3">
+                        {item.type === "merch" ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateQuantity(item.id, item.quantity - 1)
+                              }
+                              className="w-7 h-7 rounded-full border border-white/15 text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="w-6 text-center text-sm font-medium">
+                              {item.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateQuantity(item.id, item.quantity + 1)
+                              }
+                              className="w-7 h-7 rounded-full border border-white/15 text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            Qty: 1
+                          </span>
+                        )}
+                        <span className="font-bold text-primary">
+                          {formatPrice(
+                            product?.priceINR,
+                            product?.priceUSD,
+                            item.price * item.quantity,
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
 
@@ -377,7 +443,11 @@ export default function CartPage() {
                       {item.title} × {item.quantity}
                     </span>
                     <span>
-                      ₹{((item.price * item.quantity) / 100).toFixed(2)}
+                      {formatPrice(
+                        merch.find((m) => m.id === item.productId)?.priceINR,
+                        merch.find((m) => m.id === item.productId)?.priceUSD,
+                        item.price * item.quantity,
+                      )}
                     </span>
                   </div>
                 ))}
@@ -415,7 +485,12 @@ export default function CartPage() {
                       <div className="flex justify-between text-sm text-green-400">
                         <span>Discount</span>
                         <span>
-                          -₹{(appliedCoupon.discount / 100).toFixed(2)}
+                          -
+                          {formatPrice(
+                            appliedCoupon.discount,
+                            undefined,
+                            appliedCoupon.discount,
+                          )}
                         </span>
                       </div>
                     </motion.div>
@@ -460,18 +535,42 @@ export default function CartPage() {
               <div className="space-y-1">
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Subtotal</span>
-                  <span>₹{(cartTotal / 100).toFixed(2)}</span>
+                  <span>{formatPrice(undefined, undefined, cartTotal)}</span>
                 </div>
                 {appliedCoupon && (
                   <div className="flex justify-between text-sm text-green-400">
                     <span>Coupon ({appliedCoupon.code})</span>
-                    <span>-₹{(appliedCoupon.discount / 100).toFixed(2)}</span>
+                    <span>
+                      -
+                      {formatPrice(
+                        appliedCoupon.discount,
+                        undefined,
+                        appliedCoupon.discount,
+                      )}
+                    </span>
+                  </div>
+                )}
+                {shippingTotal > 0 && (
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>
+                      Shipping (
+                      {shippingRegion === "india" ? "India" : "International"})
+                    </span>
+                    <span>
+                      {formatPrice(shippingTotal, undefined, shippingTotal)}
+                    </span>
+                  </div>
+                )}
+                {shippingTotal === 0 && hasMerchItems && (
+                  <div className="flex justify-between text-sm text-green-400">
+                    <span>Shipping</span>
+                    <span>Free</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-foreground pt-1">
                   <span>Total</span>
                   <span className="text-primary text-lg">
-                    ₹{(adjustedTotal / 100).toFixed(2)}
+                    {formatPrice(undefined, undefined, adjustedTotal)}
                   </span>
                 </div>
               </div>
@@ -541,6 +640,34 @@ export default function CartPage() {
                   className="mt-1 bg-muted/30 border-white/10"
                 />
               </div>
+
+              {/* Shipping Region */}
+              {hasMerchItems && (
+                <div>
+                  <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5" /> Shipping Region
+                  </Label>
+                  <Select
+                    value={shippingRegion}
+                    onValueChange={(v) =>
+                      handleRegionChange(v as ShippingRegion)
+                    }
+                  >
+                    <SelectTrigger
+                      className="mt-1 bg-muted/30 border-white/10"
+                      data-ocid="cart.select"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="india">🇮🇳 India</SelectItem>
+                      <SelectItem value="international">
+                        🌍 International
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Shipping Address — shown only for merch orders */}
               {hasMerchItems && (

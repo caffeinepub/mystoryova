@@ -13,6 +13,7 @@ import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import { AdminProvider } from "./hooks/useAdmin";
 import { CartProvider } from "./hooks/useCart";
+import { CurrencyProvider } from "./hooks/useCurrency";
 import { StoreProvider } from "./hooks/useStore";
 import AboutPage from "./pages/AboutPage";
 import AdminPage from "./pages/AdminPage";
@@ -43,19 +44,21 @@ function RootLayout() {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-      <StoreProvider>
-        <CartProvider>
-          <div className="min-h-screen bg-background text-foreground flex flex-col">
-            <Navbar />
-            <main className="flex-1">
-              <Outlet />
-            </main>
-            <Footer />
-            <ChatbotWidget />
-            <Toaster />
-          </div>
-        </CartProvider>
-      </StoreProvider>
+      <CurrencyProvider>
+        <StoreProvider>
+          <CartProvider>
+            <div className="min-h-screen bg-background text-foreground flex flex-col">
+              <Navbar />
+              <main className="flex-1">
+                <Outlet />
+              </main>
+              <Footer />
+              <ChatbotWidget />
+              <Toaster />
+            </div>
+          </CartProvider>
+        </StoreProvider>
+      </CurrencyProvider>
     </ThemeProvider>
   );
 }

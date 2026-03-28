@@ -55,6 +55,10 @@ const EMPTY_MERCH: Omit<MerchProduct, "id"> = {
   title: "",
   description: "",
   price: 2500,
+  priceINR: 0,
+  priceUSD: 0,
+  shippingIndia: 0,
+  shippingInternational: 0,
   imageUrl: "",
   category: "T-Shirt",
   inStock: true,
@@ -72,6 +76,8 @@ const EMPTY_AUDIO: Omit<AudiobookProduct, "id"> = {
   title: "",
   description: "",
   price: 1499,
+  priceINR: 0,
+  priceUSD: 0,
   sampleUrl: "",
   fullAudioUrl: "",
   duration: "",
@@ -223,7 +229,7 @@ function MerchForm({
         />
       </div>
       <div>
-        <Label>Price (in cents, e.g. 2499 = $24.99)</Label>
+        <Label>Base Price (in paise/cents, e.g. 2499)</Label>
         <Input
           data-ocid="admin.input"
           type="number"
@@ -233,9 +239,89 @@ function MerchForm({
           }
           className="mt-1 bg-muted/30 border-white/10"
         />
-        <p className="text-xs text-muted-foreground mt-1">
-          = ${(form.price / 100).toFixed(2)}
-        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="flex items-center gap-1">Price (₹ INR)</Label>
+          <Input
+            data-ocid="admin.input"
+            type="number"
+            min={0}
+            value={form.priceINR ?? 0}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, priceINR: Number(e.target.value) }))
+            }
+            placeholder="e.g. 249900 = ₹2499"
+            className="mt-1 bg-muted/30 border-white/10"
+          />
+          {(form.priceINR ?? 0) > 0 && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              = ₹{((form.priceINR ?? 0) / 100).toFixed(2)}
+            </p>
+          )}
+        </div>
+        <div>
+          <Label className="flex items-center gap-1">Price ($ USD)</Label>
+          <Input
+            data-ocid="admin.input"
+            type="number"
+            min={0}
+            value={form.priceUSD ?? 0}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, priceUSD: Number(e.target.value) }))
+            }
+            placeholder="e.g. 2999 = $29.99"
+            className="mt-1 bg-muted/30 border-white/10"
+          />
+          {(form.priceUSD ?? 0) > 0 && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              = ${((form.priceUSD ?? 0) / 100).toFixed(2)}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label>Shipping — India (₹)</Label>
+          <Input
+            data-ocid="admin.input"
+            type="number"
+            min={0}
+            value={form.shippingIndia ?? 0}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, shippingIndia: Number(e.target.value) }))
+            }
+            placeholder="e.g. 9900 = ₹99"
+            className="mt-1 bg-muted/30 border-white/10"
+          />
+          {(form.shippingIndia ?? 0) > 0 && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              = ₹{((form.shippingIndia ?? 0) / 100).toFixed(2)}
+            </p>
+          )}
+        </div>
+        <div>
+          <Label>Shipping — International ($)</Label>
+          <Input
+            data-ocid="admin.input"
+            type="number"
+            min={0}
+            value={form.shippingInternational ?? 0}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                shippingInternational: Number(e.target.value),
+              }))
+            }
+            placeholder="e.g. 1499 = $14.99"
+            className="mt-1 bg-muted/30 border-white/10"
+          />
+          {(form.shippingInternational ?? 0) > 0 && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              = ${((form.shippingInternational ?? 0) / 100).toFixed(2)}
+            </p>
+          )}
+        </div>
       </div>
       <FileUploadField
         label="Product Image"
@@ -400,7 +486,7 @@ function AudiobookForm({
         />
       </div>
       <div>
-        <Label>Price (in cents, e.g. 1499 = $14.99)</Label>
+        <Label>Base Price (in paise/cents)</Label>
         <Input
           data-ocid="admin.input"
           type="number"
@@ -410,9 +496,46 @@ function AudiobookForm({
           }
           className="mt-1 bg-muted/30 border-white/10"
         />
-        <p className="text-xs text-muted-foreground mt-1">
-          = ${(form.price / 100).toFixed(2)}
-        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label>Price (₹ INR)</Label>
+          <Input
+            data-ocid="admin.input"
+            type="number"
+            min={0}
+            value={form.priceINR ?? 0}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, priceINR: Number(e.target.value) }))
+            }
+            placeholder="e.g. 149900 = ₹1499"
+            className="mt-1 bg-muted/30 border-white/10"
+          />
+          {(form.priceINR ?? 0) > 0 && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              = ₹{((form.priceINR ?? 0) / 100).toFixed(2)}
+            </p>
+          )}
+        </div>
+        <div>
+          <Label>Price ($ USD)</Label>
+          <Input
+            data-ocid="admin.input"
+            type="number"
+            min={0}
+            value={form.priceUSD ?? 0}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, priceUSD: Number(e.target.value) }))
+            }
+            placeholder="e.g. 1799 = $17.99"
+            className="mt-1 bg-muted/30 border-white/10"
+          />
+          {(form.priceUSD ?? 0) > 0 && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              = ${((form.priceUSD ?? 0) / 100).toFixed(2)}
+            </p>
+          )}
+        </div>
       </div>
       <div>
         <Label>Duration (e.g. 6h 42m)</Label>

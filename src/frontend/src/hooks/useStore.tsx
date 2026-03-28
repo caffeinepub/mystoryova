@@ -5,6 +5,10 @@ export interface MerchProduct {
   title: string;
   description: string;
   price: number;
+  priceINR?: number;
+  priceUSD?: number;
+  shippingIndia?: number;
+  shippingInternational?: number;
   imageUrl: string;
   category: string;
   inStock: boolean;
@@ -20,6 +24,8 @@ export interface AudiobookProduct {
   title: string;
   description: string;
   price: number;
+  priceINR?: number;
+  priceUSD?: number;
   sampleUrl: string;
   fullAudioUrl: string;
   duration: string;
@@ -74,6 +80,10 @@ const SEED_MERCH: MerchProduct[] = [
     description:
       'Premium cotton tee featuring the iconic Mystoryova logo and the tagline "Stories That Stay With You". Soft, comfortable, and perfect for the avid reader.',
     price: 2499,
+    priceINR: 249900,
+    priceUSD: 2999,
+    shippingIndia: 9900,
+    shippingInternational: 1499,
     imageUrl: "",
     category: "T-Shirt",
     inStock: true,
@@ -87,6 +97,10 @@ const SEED_MERCH: MerchProduct[] = [
     description:
       "Inspired by the world of The Ember Prophecy. A cozy, heavyweight hoodie with a subtle ember design on the chest. Perfect for late-night reading sessions.",
     price: 4499,
+    priceINR: 449900,
+    priceUSD: 5499,
+    shippingIndia: 12900,
+    shippingInternational: 1999,
     imageUrl: "",
     category: "Hoodie",
     inStock: true,
@@ -100,6 +114,10 @@ const SEED_MERCH: MerchProduct[] = [
     description:
       "Start your day with stories. This ceramic mug features a handwritten quote from O. Chiddarwar on one side and the Mystoryova emblem on the other.",
     price: 1699,
+    priceINR: 169900,
+    priceUSD: 1999,
+    shippingIndia: 7900,
+    shippingInternational: 1299,
     imageUrl: "",
     category: "Mug",
     inStock: true,
@@ -111,6 +129,10 @@ const SEED_MERCH: MerchProduct[] = [
     description:
       "A sturdy canvas tote inspired by The Long Climb. Features original artwork and a quote from the book. Holds your next great adventure.",
     price: 1999,
+    priceINR: 199900,
+    priceUSD: 2399,
+    shippingIndia: 7900,
+    shippingInternational: 1299,
     imageUrl: "",
     category: "Tote Bag",
     inStock: true,
@@ -122,6 +144,10 @@ const SEED_MERCH: MerchProduct[] = [
     description:
       "A signed art poster inspired by The Letter in the Rain. Printed on archival matte paper. A beautiful addition to any reader's space.",
     price: 2999,
+    priceINR: 299900,
+    priceUSD: 3599,
+    shippingIndia: 9900,
+    shippingInternational: 1499,
     imageUrl: "",
     category: "Poster",
     inStock: true,
@@ -137,6 +163,8 @@ const SEED_AUDIOBOOKS: AudiobookProduct[] = [
     description:
       "An emotional journey of perseverance and self-discovery. Listen to this powerful story narrated with depth and warmth, bringing every character vividly to life.",
     price: 1499,
+    priceINR: 149900,
+    priceUSD: 1799,
     sampleUrl: "",
     fullAudioUrl: "",
     duration: "6h 42m",
@@ -150,6 +178,8 @@ const SEED_AUDIOBOOKS: AudiobookProduct[] = [
     description:
       "A spellbinding fantasy epic narrated with passion and intensity. Experience the world of prophecy and destiny in stunning audio detail.",
     price: 1799,
+    priceINR: 179900,
+    priceUSD: 2199,
     sampleUrl: "",
     fullAudioUrl: "",
     duration: "9h 15m",
@@ -163,6 +193,8 @@ const SEED_AUDIOBOOKS: AudiobookProduct[] = [
     description:
       "A romantic and poignant story of love, loss, and letters never sent. Hear every heartbeat in this exquisite audio performance.",
     price: 1299,
+    priceINR: 129900,
+    priceUSD: 1599,
     sampleUrl: "",
     fullAudioUrl: "",
     duration: "5h 58m",
@@ -357,7 +389,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return {
         valid: false,
         discount: 0,
-        message: `Minimum order of $${(coupon.minOrderAmount / 100).toFixed(2)} required.`,
+        message: `Minimum order of ₹${(coupon.minOrderAmount / 100).toFixed(2)} required.`,
       };
     }
     let discount = 0;
@@ -369,7 +401,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const label =
       coupon.discountType === "percent"
         ? `${coupon.discountValue}%`
-        : `$${(coupon.discountValue / 100).toFixed(2)}`;
+        : `₹${(coupon.discountValue / 100).toFixed(2)}`;
     return { valid: true, discount, message: `${label} discount applied!` };
   };
 

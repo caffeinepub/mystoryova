@@ -562,7 +562,7 @@ actor {
   // ADMIN PASSWORD API
   // ============================================================
 
-  public query func verifyAdminPassword(password : Text) : async Bool {
+  public shared func verifyAdminPassword(password : Text) : async Bool {
     password == adminPassword;
   };
 
